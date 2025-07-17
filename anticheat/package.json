@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "dev": "node ./scanner.js"
+  },
+  "devDependencies": {
+    "eslint": "^9.31.0"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.0",
+    "@babel/traverse": "^7.28.0"
+  }
+}
