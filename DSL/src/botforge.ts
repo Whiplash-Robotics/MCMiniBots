@@ -1,4 +1,5 @@
 import { Bot, BotOptions } from "mineflayer";
+import { logErr } from "../utils/error.js";
 import mineflayer from "mineflayer";
 import { Entity } from "prismarine-entity";
 import _ from "lodash";
@@ -61,8 +62,8 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     // Essential actions
     "chat",
     "look",
-    "setControlState",
-    // ^ Consider adding other crucial methods your bot will need to function.
+    //"setControlState",
+    // ^ other crucial methods your bot will need to function.
 
     // Our custom functions
     "getTrackedPlayers",
@@ -85,9 +86,7 @@ export function createBotForge(options: BotForgeOptions): BotForge {
         return value;
       }
 
-      console.error(
-        `[BotForge] Blocked access to restricted property: "${String(prop)}"`
-      );
+      logErr(prop);
       return undefined;
     },
 
