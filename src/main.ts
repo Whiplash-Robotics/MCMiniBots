@@ -1,4 +1,4 @@
-import { createBotForge, BotForge } from "../DSL/src/opponent.js"; // Adjusted import path
+import { createBotForge, BotForge } from "../DSL/src/botforge.js"; // Adjusted import path
 
 const bot: BotForge = createBotForge({
   host: "localhost",
