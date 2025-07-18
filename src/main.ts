@@ -1,25 +1,27 @@
-import mineflayer from "mineflayer";
-import { SensoryModule } from "../DSL/src/opponent.js";
-const bot = mineflayer.createBot({
+import { createBotForge, BotForge } from "../DSL/src/opponent.js"; // Adjusted import path
+
+const bot: BotForge = createBotForge({
   host: "localhost",
-  port: 58368,
+  port: 3000,
   username: "PvPBot",
+  sensory: {
+    fovDegrees: 180,
+    viewDistance: 128,
+  },
 });
 
 bot.once("spawn", () => {
-  console.log("Bot has spawned. Initializing SensoryModule.");
-  const sensoryModule = new SensoryModule(bot, { fovDegrees: 180 });
-
+  console.log("BotForge has spawned with sensory capabilities.");
   bot.on("physicTick", () => {
-    const nearestEnemy = sensoryModule.findNearestEnemy();
-
+    const nearestEnemy = bot.findNearestEnemy();
     if (nearestEnemy) {
       if (nearestEnemy.isInLineOfSight) {
         console.log(
           `I see ${nearestEnemy.username}! ` +
             `Is Crouching: ${nearestEnemy.isCrouching}. ` +
-            `health: ${nearestEnemy.healthStatus}. ` +
-            `They are holding: ${nearestEnemy.heldItem?.displayName}.`
+            `Health: ${nearestEnemy.healthStatus}. ` +
+            `Holding: ${nearestEnemy.heldItem?.displayName}. ` +
+            `Position: ${nearestEnemy.position}`
         );
       } else {
         console.log(

@@ -17,9 +17,11 @@
     "prismarine-item": "^1.16.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.20",
     "@types/node": "^20.8.9",
-    "typescript": "^5.2.2",
-    "tsx": "^3.0.0"
+    "lodash": "^4.17.21",
+    "tsx": "^3.0.0",
+    "typescript": "^5.2.2"
   },
   "type": "module"
 }

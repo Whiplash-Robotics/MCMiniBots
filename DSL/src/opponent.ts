@@ -1,27 +1,19 @@
-import { Bot } from "mineflayer";
+import { Bot, BotOptions } from "mineflayer";
+import mineflayer from "mineflayer";
 import { Entity } from "prismarine-entity";
 import { Item } from "prismarine-item";
 import { Vec3 } from "vec3";
-import * as vectorUtils from "../utils/vector.js";
-import * as botUtils from "../utils/bot.js";
+import * as vectorUtils from "../utils/vector.js"; // Assuming these utils exist
+import * as botUtils from "../utils/bot.js"; // Assuming these utils exist
+import _ from "lodash";
 
-/**
- * Represents the abstracted health status of a player.
- * Instead of giving the bot exact HP, we provide a more general status,
- * forcing the AI to make inferences.
- */
 export enum PlayerHealthStatus {
   Healthy = "Healthy", // > 75% HP
   Injured = "Injured", // 25% - 75% HP
   BadlyWounded = "BadlyWounded", // < 25% HP
-  Unknown = "Unknown", // Health cannot be determined (e.g., out of sight)
+  Unknown = "Unknown", // Health cannot be determined
 }
 
-/**
- * A "nerfed" representation of an enemy player. This is the data structure
- * your bot's AI will receive. It contains only the information that a real
- * player could reasonably know, with limitations based on line of sight.
- */
 export interface TrackedPlayer {
   readonly username: string;
   readonly uuid: string;
@@ -39,43 +31,57 @@ export interface TrackedPlayer {
   readonly isOnFire: boolean | null;
   readonly healthStatus: PlayerHealthStatus;
   readonly isInLineOfSight: boolean;
-  readonly lastSeenAt: number; // Timestamp of the last time the player was in LoS
+  readonly lastSeenAt: number; // Timestamp
+}
+export interface BotForgeOptions extends BotOptions {
+  sensory?: {
+    viewDistance?: number;
+    fovDegrees?: number;
+  };
 }
 
 /**
- * Manages the bot's perception of other players, enforcing a "fog of war".
- * It wraps the raw bot.players data and provides a limited, more realistic
- * view of the world.
+ * Extends the base Mineflayer Bot type with custom sensory methods.
+ * This is what the createBotForge function will return.
  */
-export class SensoryModule {
-  private bot: Bot;
+// BotForge.ts
+
+export interface BotForge {
+  readonly username: string;
+  readonly entity: Entity;
+
+  on: Bot["on"];
+  once: Bot["once"];
+  chat: (message: string) => void;
+  // Add other essentials like bot.look, bot.setControlState, etc.
+
+  // --- Our Custom Addons ---
+  getTrackedPlayers(): TrackedPlayer[];
+  findNearestEnemy(): TrackedPlayer | null;
+}
+
+/**
+ * This internal class manages the sensory logic. It's not exported,
+ * as its functionality will be merged into the BotForge instance.
+ */
+class SensoryManager {
+  private readonly bot: Bot;
   private trackedPlayers: Map<string, TrackedPlayer> = new Map();
   private readonly viewDistance: number;
   private readonly fov: number; // Field of view in radians
 
-  /**
-   * @param bot The mineflayer bot instance.
-   * @param options Configuration options for the sensory module.
-   * @param options.viewDistance How far the bot can see players.
-   * @param options.fovDegrees The horizontal field of view in degrees.
-   */
   constructor(
     bot: Bot,
     options: { viewDistance?: number; fovDegrees?: number } = {}
   ) {
     this.bot = bot;
-    this.viewDistance = options.viewDistance ?? 128; // Default view distance
-    this.fov = (options.fovDegrees ?? 180) * (Math.PI / 180); // Default 180 degree FOV
+    this.viewDistance = options.viewDistance ?? 128;
+    this.fov = (options.fovDegrees ?? 180) * (Math.PI / 180);
 
-    // Hook into the bot's physics tick to run updates continuously.
-    // This is the heartbeat of the sensory system.
-    this.bot.on("physicTick", () => this.updateTrackedPlayers());
+    // Heartbeat of the sensory system
+    this.bot.on("physicsTick", () => this.updateTrackedPlayers());
   }
 
-  /**
-   * Core update loop, called on every physics tick.
-   * This method re-evaluates the status of all known players.
-   */
   private updateTrackedPlayers(): void {
     const now = Date.now();
     const currentPlayers = new Set<string>();
@@ -84,27 +90,25 @@ export class SensoryModule {
       if (this.bot.username === username) continue; // Skip self
 
       const playerEntity = this.bot.players[username]?.entity;
-      if (!playerEntity) continue;
+      if (!playerEntity?.uuid) continue;
 
       currentPlayers.add(username);
-      const uuid = playerEntity.uuid;
+      const { uuid } = playerEntity;
 
-      if (!uuid) return; // Skip if no UUID
-
-      // Determine if the player is currently visible.
       const isInLineOfSight = this.isPlayerVisible(playerEntity);
-      const existingData = this.trackedPlayers.get(uuid);
+      const existingData = _.cloneDeep(this.trackedPlayers.get(uuid));
 
       let newTrackedData: TrackedPlayer;
 
-      const metadata = playerEntity.metadata as Number[];
+      const metadata = (playerEntity.metadata as any[]) || [];
       const hp = botUtils.currentHealth(playerEntity);
-      const max = 20; // Assuming 20 is the max health for players
+      const maxHp = 20;
+
       if (isInLineOfSight) {
-        // Player is IN VISION: Provide detailed, real-time information.
+        // Player is visible: Provide real-time data
         newTrackedData = {
           username: playerEntity.username!,
-          uuid: playerEntity.uuid!,
+          uuid,
           position: playerEntity.position,
           velocity: playerEntity.velocity,
           heldItem: playerEntity.heldItem,
@@ -114,30 +118,26 @@ export class SensoryModule {
             legs: playerEntity.equipment[3],
             feet: playerEntity.equipment[4],
           },
-          isCrouching: metadata[0] === 2, // Using metadata to check crouch status
-          isSprinting: metadata[0] === 8, // Using metadata to check sprint status
-          isOnFire: metadata[0] === 1, // Using metadata to check fire status
-          healthStatus: this.getHealthStatus(hp, max), // Assuming 20 is max health
+          isCrouching: (metadata[0] & 0x02) !== 0,
+          isSprinting: (metadata[0] & 0x08) !== 0,
+          isOnFire: (metadata[0] & 0x01) !== 0,
+          healthStatus: this.getHealthStatus(hp, maxHp),
           isInLineOfSight: true,
           lastSeenAt: now,
         };
       } else {
-        // Player is OUT OF VISION: Provide limited, stale, or inferred information.
-        // const isAudible = !playerEntity.metadata[0] === 2;
-        const isAudible = true;
+        // Player is not visible: Provide last known or limited data
+        const nametagVisible = !(metadata[0] & 0x02); // Not crouching
         newTrackedData = {
           username: playerEntity.username!,
-          uuid: playerEntity.uuid!,
-          // Position and velocity are only known if the player is making noise (not crouching).
-          // Otherwise, we provide the last known position.
-          position: isAudible
+          uuid,
+          position: nametagVisible
             ? playerEntity.position
             : existingData?.position || null,
-          velocity: isAudible ? playerEntity.velocity : new Vec3(0, 0, 0),
-          // Sensitive information is hidden.
+          velocity: nametagVisible ? playerEntity.velocity : new Vec3(0, 0, 0),
           heldItem: null,
           armor: { head: null, torso: null, legs: null, feet: null },
-          isCrouching: null, // We don't know for sure if they are crouching now.
+          isCrouching: null,
           isSprinting: null,
           isOnFire: null,
           healthStatus: PlayerHealthStatus.Unknown,
@@ -148,22 +148,15 @@ export class SensoryModule {
       this.trackedPlayers.set(uuid, newTrackedData);
     }
 
-    // Clean up players who have left the server or are out of range.
+    // Clean up players who have left the server
     for (const uuid of this.trackedPlayers.keys()) {
-      if (!currentPlayers.has(this.trackedPlayers.get(uuid)!.username)) {
+      const player = this.trackedPlayers.get(uuid);
+      if (player && !currentPlayers.has(player.username)) {
         this.trackedPlayers.delete(uuid);
       }
     }
   }
 
-  /**
-   * Determines if a player is within the bot's direct field of vision.
-   * This involves two checks:
-   * 1. Is the player within the bot's view cone (angle check)?
-   * 2. Is there an unobstructed line of sight (raycast check)?
-   * @param playerEntity The entity to check.
-   * @returns True if the player is visible, false otherwise.
-   */
   private isPlayerVisible(playerEntity: Entity): boolean {
     const botPosition = this.bot.entity.position.offset(
       0,
@@ -177,38 +170,25 @@ export class SensoryModule {
     );
     const distance = botPosition.distanceTo(playerPosition);
 
-    if (distance > this.viewDistance) {
-      return false; // Player is too far away.
-    }
+    if (distance > this.viewDistance) return false;
 
-    // 1. Angle Check
     const vectorToPlayer = playerPosition.subtract(botPosition);
-
     const currentViewVector = botUtils.currentView(this.bot);
-
     const angle = vectorUtils.angleBetween(currentViewVector, vectorToPlayer);
-    if (angle > this.fov / 2) {
-      return false; // Player is outside the bot's Field of View cone.
-    }
 
-    // 2. Raycast Check (Line of Sight)
+    if (angle > this.fov / 2) return false;
+
     const blockInWay = this.bot.world.raycast(
       botPosition,
       vectorToPlayer.normalize(),
       distance
     );
-    return !blockInWay; // If raycast returns null, there's nothing in the way.
+    return !blockInWay;
   }
 
-  /**
-   * Converts a player's raw health and max health into a simplified status enum.
-   * @param health Current health.
-   * @param maxHealth Maximum health.
-   * @returns A PlayerHealthStatus enum value.
-   */
   private getHealthStatus(
-    health: number | undefined,
-    maxHealth: number | undefined
+    health?: number,
+    maxHealth?: number
   ): PlayerHealthStatus {
     if (health === undefined || maxHealth === undefined || maxHealth === 0) {
       return PlayerHealthStatus.Unknown;
@@ -219,69 +199,92 @@ export class SensoryModule {
     return PlayerHealthStatus.BadlyWounded;
   }
 
-  // --- PUBLIC API for the bot's AI ---
-
-  /**
-   * Gets a list of all players the bot is currently aware of.
-   * @returns An array of TrackedPlayer objects.
-   */
-  public getTrackedPlayers(): TrackedPlayer[] {
+  // --- PUBLIC API to be merged into the BotForge instance ---
+  public getTrackedPlayers = (): TrackedPlayer[] => {
     return Array.from(this.trackedPlayers.values());
-  }
+  };
 
-  /**
-   * Finds the nearest enemy based on the currently tracked information.
-   * @returns The nearest TrackedPlayer object, or null if no players are tracked.
-   */
-  public findNearestEnemy(): TrackedPlayer | null {
-    let nearestPlayer: TrackedPlayer | null = null;
-    let minDistance = Infinity;
-
-    for (const player of this.trackedPlayers.values()) {
-      if (player.position) {
-        const distance = this.bot.entity.position.distanceTo(player.position);
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestPlayer = player;
-        }
-      }
-    }
-    return nearestPlayer;
-  }
+  public findNearestEnemy = (): TrackedPlayer | null => {
+    return (
+      this.getTrackedPlayers()
+        .filter((p) => p.position)
+        .sort(
+          (a, b) =>
+            this.bot.entity.position.distanceTo(a.position!) -
+            this.bot.entity.position.distanceTo(b.position!)
+        )[0] || null
+    );
+  };
 }
 
-// --- Example Usage ---
-// This is how you would integrate the SensoryModule into your main bot file.
+/**
+ * Creates a new BotForge instance.
+ * This function creates a standard mineflayer bot and then "upgrades" it
+ * with the sensory perception capabilities.
+ *
+ * @param options - Configuration for the bot, including sensory options.
+ * @returns An initialized BotForge instance.
+ */
+// BotForge.ts
 
-// import mineflayer from "mineflayer";
+export function createBotForge(options: BotForgeOptions): BotForge {
+  const { sensory, ...botOptions } = options;
+  const bot = mineflayer.createBot(botOptions);
+  const sensoryManager = new SensoryManager(bot, sensory);
 
-// const bot = mineflayer.createBot({
-//   host: "localhost",
-//   port: 25565,
-//   username: "PvPBot",
-// });
+  (bot as any).getTrackedPlayers = sensoryManager.getTrackedPlayers;
+  (bot as any).findNearestEnemy = sensoryManager.findNearestEnemy;
 
-// bot.once("spawn", () => {
-//   console.log("Bot has spawned. Initializing SensoryModule.");
-//   const sensoryModule = new SensoryModule(bot, { fovDegrees: 180 });
+  const allowedProperties = new Set<string | symbol>([
+    // Essential read-only properties
+    "username",
+    "entity",
 
-//   bot.on("physicTick", () => {
-//     const nearestEnemy = sensoryModule.findNearestEnemy();
+    // Essential event listeners
+    "on",
+    "once",
 
-//     if (nearestEnemy) {
-//       if (nearestEnemy.isInLineOfSight) {
-//         console.log(
-//           `I see ${nearestEnemy.username}! ` +
-//             `Status: ${nearestEnemy.healthStatus}. ` +
-//             `They are holding: ${nearestEnemy.heldItem?.displayName}.`
-//         );
-//       } else {
-//         console.log(
-//           `I've lost sight of ${nearestEnemy.username}. Last seen at ${nearestEnemy.position}`
-//         );
-//       }
-//     } else {
-//       console.log("Searching for targets...");
-//     }
-//   });
-// });
+    // Essential actions
+    "chat",
+    "look",
+    "setControlState",
+    // ^ Consider adding other crucial methods your bot will need to function.
+
+    // Our custom functions
+    "getTrackedPlayers",
+    "findNearestEnemy",
+  ]);
+
+  // 3. Create the Proxy Handler
+  const handler: ProxyHandler<Bot> = {
+    get(target, prop, receiver) {
+      if (allowedProperties.has(prop)) {
+        const value = Reflect.get(target, prop, receiver);
+
+        // If the property is a function, bind it to the original bot object.
+        // This ensures its internal 'this' refers to the real bot,
+        // allowing it to access private properties like '_events' without being trapped.
+        if (typeof value === "function") {
+          return value.bind(target);
+        }
+
+        // Otherwise, just return the value (e.g., for 'username' or 'entity')
+        return value;
+      }
+
+      console.error(
+        `[BotForge] Blocked access to restricted property: "${String(prop)}"`
+      );
+      return undefined;
+    },
+
+    set(target, prop, value, receiver) {
+      // Forward the set operation to the original object. This is safer
+      // than blocking everything, as it allows allowed methods to
+      // manage the bot's internal state correctly.
+      return Reflect.set(target, prop, value, receiver);
+    },
+  };
+
+  return new Proxy(bot, handler) as unknown as BotForge;
+}
