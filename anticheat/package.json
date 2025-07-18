@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "dev": "node ./scanner.js"
+    "test": "node ./scanner.mjs"
   },
   "devDependencies": {
     "eslint": "^9.31.0"
