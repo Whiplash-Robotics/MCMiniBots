@@ -45,14 +45,14 @@ Here's the workflow:
 
 1.  Our `createBotForge()` function is the **single entry point** for creating a bot.
 2.  Inside, it first creates a standard `mineflayer.createBot()` instance. This gives us a normal, fully-functional bot.
-3.  It then instantiates one or more internal "manager" classes (like `SensoryManager`) that contain our custom logic. These managers are given a reference to the bot so they can listen to its events and access its data.
-4.  Finally, it **augments** the original bot object by attaching the public methods from our managers directly onto it (e.g., `bot.findNearestEnemy = ...`).
+3.  It then instantiates one or more internal "module" classes (like `SensoryModule`) that contain our custom logic. These modules are given a reference to the bot so they can listen to its events and access its data.
+4.  Finally, it **augments** the original bot object by attaching the public methods from our modules directly onto it (e.g., `bot.findNearestEnemy = ...`).
 5.  The function returns this "upgraded" bot, which we type as `BotForge` to give us TypeScript autocompletion for our new methods.
 
 **Why this way?**
 
 - **Non-Invasive:** We don't have to replicate Mineflayer's complex bot setup process or worry about breaking its internal state.
-- **Modular:** It's incredibly easy to add new functionality. Want to add a "hearing" module? Just create a `HearingManager`, instantiate it in the factory, and attach its methods to the bot.
+- **Modular:** It's incredibly easy to add new functionality. Want to add a "hearing" module? Just create a `HearingModule`, instantiate it in the factory, and attach its methods to the bot.
 - **Clean API:** The end-user gets a single `bot` object with all the features built-in. They don't need to juggle multiple class instances.
 
 ---
@@ -88,7 +88,7 @@ export interface BotForge extends Bot {
 }
 ```
 
-### `SensoryManager` (Internal Class)
+### `SensoryModule` (Internal Class)
 
 This class contains all the logic for visual perception. It is **not exported** and should be considered an internal, private part of the module.
 
@@ -108,7 +108,7 @@ This is the **only function you should import** into your main application file 
 export function createBotForge(options: BotForgeOptions): BotForge;
 ```
 
-It orchestrates the entire setup process as described in the architecture section. It takes all the standard bot options plus our custom ones, creates the bot, initializes the `SensoryManager`, hooks everything together, and returns the final, powerful `BotForge` object.
+It orchestrates the entire setup process as described in the architecture section. It takes all the standard bot options plus our custom ones, creates the bot, initializes the `SensoryModule`, hooks everything together, and returns the final, powerful `BotForge` object.
 
 ---
 
@@ -130,13 +130,13 @@ export interface SoundEvent {
 }
 ```
 
-### Step 2: Create a New Manager Class
+### Step 2: Create a New Module Class
 
-Create a new internal manager class, similar to `SensoryManager`, to handle the logic.
+Create a new internal module class, similar to `SensoryModule`, to handle the logic.
 
 ```typescript
 // In BotForge.ts, add a new internal class
-class HearingManager {
+class HearingModule {
   private readonly bot: Bot;
   private recentSounds: SoundEvent[] = [];
   private readonly maxSoundAge = 5000; // Sounds expire after 5 seconds
@@ -178,7 +178,7 @@ class HearingManager {
 
 ### Step 3: Integrate into the Factory
 
-Now, update `createBotForge` to use your new `HearingManager`.
+Now, update `createBotForge` to use your new `HearingModule`.
 
 1.  **Update the `BotForge` interface** to include your new method.
     ```typescript
@@ -195,21 +195,21 @@ Now, update `createBotForge` to use your new `HearingManager`.
       const { sensory, ...botOptions } = options;
       const bot = mineflayer.createBot(botOptions);
 
-      // Existing sensory manager
-      const sensoryManager = new SensoryManager(bot, sensory);
+      // Existing sensory module
+      const SensoryModule = new SensoryModule(bot, sensory);
 
       // --- NEW ---
-      // 1. Initialize the new manager
-      const hearingManager = new HearingManager(bot);
+      // 1. Initialize the new module
+      const HearingModule = new HearingModule(bot);
       // --- END NEW ---
 
       const botForge = bot as BotForge;
-      botForge.getTrackedPlayers = sensoryManager.getTrackedPlayers;
-      botForge.findNearestEnemy = sensoryManager.findNearestEnemy;
+      botForge.getTrackedPlayers = SensoryModule.getTrackedPlayers;
+      botForge.findNearestEnemy = SensoryModule.findNearestEnemy;
 
       // --- NEW ---
       // 2. Attach the new public method
-      botForge.getRecentSounds = hearingManager.getRecentSounds;
+      botForge.getRecentSounds = HearingModule.getRecentSounds;
       // --- END NEW ---
 
       return botForge;

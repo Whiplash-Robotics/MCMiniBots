@@ -44,10 +44,10 @@ export interface BotForge {
 export function createBotForge(options: BotForgeOptions): BotForge {
   const { sensory, ...botOptions } = options;
   const bot = mineflayer.createBot(botOptions);
-  const sensoryManager = new SensoryModule(bot, sensory);
+  const sensoryModule = new SensoryModule(bot, sensory);
 
-  (bot as any).getTrackedPlayers = sensoryManager.getTrackedPlayers;
-  (bot as any).findNearestEnemy = sensoryManager.findNearestEnemy;
+  (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
+  (bot as any).findNearestEnemy = sensoryModule.findNearestEnemy;
 
   const allowedProperties = new Set<string | symbol>([
     // Essential read-only properties
@@ -68,7 +68,6 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     "getTrackedPlayers",
     "findNearestEnemy",
   ]);
-
   // 3. Create the Proxy Handler
   const handler: ProxyHandler<Bot> = {
     get(target, prop, receiver) {
