@@ -1,0 +1,17 @@
+{
+  "type": "module",
+  "compilerOptions": {
+    "moduleResolution": "nodenext",
+    "target": "es2020",
+    "module": "nodenext",
+    "rootDir": "./",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*", "DSL/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
