@@ -5,10 +5,15 @@ import { Entity } from "prismarine-entity";
 import _ from "lodash";
 import { TrackedPlayer } from "./types.js";
 import { SensoryModule } from "./modules/SensoryModule.js";
+import { SoundModule, SoundEvent } from "./modules/SoundModule.js";
 export interface BotForgeOptions extends BotOptions {
   sensory?: {
     viewDistance?: number;
     fovDegrees?: number;
+  };
+  sound?: {
+    maxSoundAge?: number;
+    fuzzyAngle?: number;
   };
 }
 
@@ -30,6 +35,7 @@ export interface BotForge {
   // --- Our Custom Addons ---
   getTrackedPlayers(): TrackedPlayer[];
   findNearestEnemy(): TrackedPlayer | null;
+  getRecentSounds(): SoundEvent[];
 }
 
 /**
@@ -43,12 +49,14 @@ export interface BotForge {
 // BotForge.ts
 
 export function createBotForge(options: BotForgeOptions): BotForge {
-  const { sensory, ...botOptions } = options;
+  const { sensory, sound, ...botOptions } = options;
   const bot = mineflayer.createBot(botOptions);
   const sensoryModule = new SensoryModule(bot, sensory);
+  const soundModule = new SoundModule(bot, sound);
 
   (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
   (bot as any).findNearestEnemy = sensoryModule.findNearestEnemy;
+  (bot as any).getRecentSounds = soundModule.getRecentSounds;
 
   const allowedProperties = new Set<string | symbol>([
     // Essential read-only properties
@@ -68,6 +76,7 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     // Our custom functions
     "getTrackedPlayers",
     "findNearestEnemy",
+    "getRecentSounds",
   ]);
   // 3. Create the Proxy Handler
   const handler: ProxyHandler<Bot> = {
