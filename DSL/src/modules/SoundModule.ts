@@ -4,9 +4,7 @@ import { performance } from "node:perf_hooks";
 import { getFuzzySound } from "../../utils/vector.js"; // Assuming getFuzzySound is in this utils file
 
 export interface SoundEvent {
-  readonly soundId: number;
-  readonly soundCategoryIndex: number;
-  readonly soundCategory: string;
+  readonly soundName: string;
   readonly position: Vec3;
   readonly timestamp: number;
 }
@@ -41,19 +39,14 @@ export class SoundModule {
     this.fuzzyAngle = options.fuzzyAngle ?? 10; // Default to 10 degrees
     const pruneInterval = options.pruneInterval ?? 1000; // Default to 1 second
 
-    this.bot.on("hardcodedSoundEffectHeard", this.handleSoundEvent);
+    this.bot.on("soundEffectHeard", this.handleSoundEvent);
     setInterval(this.pruneOldSounds, pruneInterval);
   }
 
   /**
    * The core listener that processes incoming sound packets.
    */
-  private handleSoundEvent = (
-    soundId: number,
-    soundCategory: number,
-    position: Vec3
-  ): void => {
-    // Use the provided utility to create an imprecise sound location
+  private handleSoundEvent = (soundName: string, position: Vec3): void => {
     const fuzzyPosition = getFuzzySound(
       position,
       this.bot.entity.position,
@@ -61,9 +54,7 @@ export class SoundModule {
     );
 
     const soundEvent: SoundEvent = {
-      soundId,
-      soundCategoryIndex: soundCategory,
-      soundCategory: this.soundCategoryMap[soundCategory] || "unknown",
+      soundName,
       position: fuzzyPosition,
       timestamp: performance.now(),
     };
