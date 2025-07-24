@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx src/main.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -20,9 +22,11 @@
   "devDependencies": {
     "@types/lodash": "^4.17.20",
     "@types/node": "^20.8.9",
+    "@vitest/coverage-v8": "^3.2.4",
     "lodash": "^4.17.21",
     "tsx": "^3.0.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^3.2.4"
   },
   "type": "module"
 }

@@ -1,5 +1,5 @@
 import { Bot, BotOptions } from "mineflayer";
-import { logErr } from "../utils/error.js";
+import { logErr } from "./utils/error.js";
 import mineflayer from "mineflayer";
 import { Entity } from "prismarine-entity";
 import _ from "lodash";
