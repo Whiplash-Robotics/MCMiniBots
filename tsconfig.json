@@ -12,6 +12,6 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "DSL/**/*"],
+  "include": ["src/**/*", "DSL/**/*", "anticheat/**/*"],
   "exclude": ["node_modules", "dist"]
 }

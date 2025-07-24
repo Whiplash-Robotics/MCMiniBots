@@ -1,0 +1,42 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "env": {
+    "es2021": true,
+    "node": true
+  },
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "*",
+            "message": "This import is not allowed. Use only: lodash, axios"
+          }
+        ],
+        "patterns": ["*"]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["*.js", "*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              // do NOT include whitelisted packages here
+            ],
+            "patterns": [
+              "!lodash",
+              "!axios",
+              "*"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
