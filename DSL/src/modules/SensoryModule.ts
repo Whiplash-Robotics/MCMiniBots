@@ -2,18 +2,24 @@ import { Bot } from "mineflayer";
 import { TrackedPlayer, PlayerHealthStatus } from "../types.js";
 import { Entity } from "prismarine-entity";
 import { Vec3 } from "vec3";
-import * as vectorUtils from "../utils/vector.js"; // Assuming these utils exist
-import * as botUtils from "../utils/bot.js"; // Assuming these utils exist
+import * as vectorUtils from "../utils/vector.js";
+import * as botUtils from "../utils/bot.js";
 import _ from "lodash";
+
 /**
- * This internal class manages the sensory logic. It's not exported,
- * as its functionality will be merged into the BotForge instance.
+ * Defines the different states of visibility for a player.
  */
+enum Visibility {
+  DirectSight, // In FOV and unobstructed.
+  ObstructedInFov, // In FOV but behind a wall.
+  OutOfFov, // Outside the bot's viewing cone.
+}
+
 export class SensoryModule {
   private readonly bot: Bot;
   private trackedPlayers: Map<string, TrackedPlayer> = new Map();
   private readonly viewDistance: number;
-  private readonly fov: number; // Field of view in radians
+  private readonly fov: number;
 
   constructor(
     bot: Bot,
@@ -22,8 +28,6 @@ export class SensoryModule {
     this.bot = bot;
     this.viewDistance = options.viewDistance ?? 128;
     this.fov = (options.fovDegrees ?? 180) * (Math.PI / 180);
-
-    // Heartbeat of the sensory system
     this.bot.on("physicsTick", () => this.updateTrackedPlayers());
   }
 
@@ -32,7 +36,7 @@ export class SensoryModule {
     const currentPlayers = new Set<string>();
 
     for (const username in this.bot.players) {
-      if (this.bot.username === username) continue; // Skip self
+      if (this.bot.username === username) continue;
 
       const playerEntity = this.bot.players[username]?.entity;
       if (!playerEntity?.uuid) continue;
@@ -40,17 +44,16 @@ export class SensoryModule {
       currentPlayers.add(username);
       const { uuid } = playerEntity;
 
-      const isInLineOfSight = this.isPlayerVisible(playerEntity);
+      const visibility = this.getPlayerVisibility(playerEntity);
       const existingData = _.cloneDeep(this.trackedPlayers.get(uuid));
+      const metadata = (playerEntity.metadata as any[]) || [];
+      const isCurrentlyCrouching = (metadata[0] & 0x02) !== 0;
 
       let newTrackedData: TrackedPlayer;
 
-      const metadata = (playerEntity.metadata as any[]) || [];
-      const hp = botUtils.currentHealth(playerEntity);
-      const maxHp = 20;
-
-      if (isInLineOfSight) {
-        // Player is visible: Provide real-time data
+      if (visibility === Visibility.DirectSight) {
+        // Player is fully visible: Provide all real-time data.
+        const hp = botUtils.currentHealth(playerEntity);
         newTrackedData = {
           username: playerEntity.username!,
           uuid,
@@ -63,23 +66,34 @@ export class SensoryModule {
             legs: playerEntity.equipment[3],
             feet: playerEntity.equipment[4],
           },
-          isCrouching: (metadata[0] & 0x02) !== 0,
+          isCrouching: isCurrentlyCrouching,
           isSprinting: (metadata[0] & 0x08) !== 0,
           isOnFire: (metadata[0] & 0x01) !== 0,
-          healthStatus: this.getHealthStatus(hp, maxHp),
+          healthStatus: this.getHealthStatus(hp, 20),
           isInLineOfSight: true,
           lastSeenAt: now,
         };
       } else {
-        // Player is not visible: Provide last known or limited data
-        const nametagVisible = !(metadata[0] & 0x02); // Not crouching
+        // Player is not in direct sight. Determine what, if anything, the bot knows.
+        let knownPosition = existingData?.position || null;
+        let knownVelocity = new Vec3(0, 0, 0);
+
+        if (
+          visibility === Visibility.ObstructedInFov &&
+          !isCurrentlyCrouching
+        ) {
+          // Special case: In FOV and standing, so their nametag is visible through walls.
+          knownPosition = playerEntity.position;
+          knownVelocity = playerEntity.velocity;
+        }
+        // In all other cases (out of FOV, or obstructed while crouching),
+        // the bot only knows their last seen position.
+
         newTrackedData = {
           username: playerEntity.username!,
           uuid,
-          position: nametagVisible
-            ? playerEntity.position
-            : existingData?.position || null,
-          velocity: nametagVisible ? playerEntity.velocity : new Vec3(0, 0, 0),
+          position: knownPosition,
+          velocity: knownVelocity,
           heldItem: null,
           armor: { head: null, torso: null, legs: null, feet: null },
           isCrouching: null,
@@ -102,7 +116,10 @@ export class SensoryModule {
     }
   }
 
-  private isPlayerVisible(playerEntity: Entity): boolean {
+  /**
+   * Determines if a player is in the bot's FOV and/or direct line of sight.
+   */
+  private getPlayerVisibility(playerEntity: Entity): Visibility {
     const botPosition = this.bot.entity.position.offset(
       0,
       this.bot.entity.height,
@@ -115,20 +132,26 @@ export class SensoryModule {
     );
     const distance = botPosition.distanceTo(playerPosition);
 
-    if (distance > this.viewDistance) return false;
+    if (distance > this.viewDistance) {
+      return Visibility.OutOfFov; // Treat out of range as out of FOV
+    }
 
     const vectorToPlayer = playerPosition.subtract(botPosition);
     const currentViewVector = botUtils.currentView(this.bot);
     const angle = vectorUtils.angleBetween(currentViewVector, vectorToPlayer);
 
-    if (angle > this.fov / 2) return false;
+    if (angle > this.fov / 2) {
+      return Visibility.OutOfFov; // Player is outside the FOV cone.
+    }
 
+    // Player is in FOV, now check for obstructions.
     const blockInWay = this.bot.world.raycast(
       botPosition,
       vectorToPlayer.normalize(),
       distance
     );
-    return !blockInWay;
+
+    return blockInWay ? Visibility.ObstructedInFov : Visibility.DirectSight;
   }
 
   private getHealthStatus(
@@ -144,7 +167,6 @@ export class SensoryModule {
     return PlayerHealthStatus.BadlyWounded;
   }
 
-  // --- PUBLIC API to be merged into the BotForge instance ---
   public getTrackedPlayers = (): TrackedPlayer[] => {
     return Array.from(this.trackedPlayers.values());
   };

@@ -2,7 +2,7 @@ import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { performance } from "node:perf_hooks";
 import { getFuzzySound } from "../utils/vector.js"; // Assuming getFuzzySound is in this utils file
-
+import MersenneTwister from "mersenne-twister";
 export interface SoundEvent {
   readonly soundName: string;
   readonly position: Vec3;
@@ -20,24 +20,14 @@ export class SoundModule {
   private recentSounds: SoundEvent[] = [];
   private readonly maxSoundAge: number;
   private readonly fuzzyAngle: number;
-  private readonly soundCategoryMap: Record<number, string> = {
-    0: "master",
-    1: "music",
-    2: "record",
-    3: "weather",
-    4: "block",
-    5: "neutral",
-    6: "player",
-    7: "hostile",
-    8: "ambient",
-    9: "voice",
-  };
+  private readonly rng: MersenneTwister;
 
   constructor(bot: Bot, options: SoundModuleOptions = {}) {
     this.bot = bot;
     this.maxSoundAge = options.maxSoundAge ?? 5000; // Default to 5 seconds
     this.fuzzyAngle = options.fuzzyAngle ?? 10; // Default to 10 degrees
     const pruneInterval = options.pruneInterval ?? 1000; // Default to 1 second
+    this.rng = new MersenneTwister();
 
     this.bot.on("soundEffectHeard", this.handleSoundEvent);
     setInterval(this.pruneOldSounds, pruneInterval);
@@ -50,7 +40,8 @@ export class SoundModule {
     const fuzzyPosition = getFuzzySound(
       position,
       this.bot.entity.position,
-      this.fuzzyAngle
+      this.fuzzyAngle,
+      this.rng
     );
 
     const soundEvent: SoundEvent = {

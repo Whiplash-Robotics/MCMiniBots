@@ -12,10 +12,13 @@ export function angleBetween(a: Vec3, b: Vec3): number {
  * @param maxAngleDegrees The maximum deviation angle in degrees, defining the cap's size.
  * @returns A random point on the spherical cap's surface.
  */
+import MersenneTwister from "mersenne-twister";
+
 export function getFuzzySound(
   soundSource: Vec3,
   origin: Vec3,
-  maxAngleDegrees: number
+  maxAngleDegrees: number,
+  rng: MersenneTwister
 ): Vec3 {
   const relativeSourceVector = soundSource.subtract(origin);
   const R = relativeSourceVector.norm(); // .norm() is the magnitude in the vec3 library
@@ -30,9 +33,9 @@ export function getFuzzySound(
   const s_hat = relativeSourceVector.normalize();
   const maxAngleRad = (maxAngleDegrees * Math.PI) / 180;
 
-  const phi = Math.random() * 2 * Math.PI;
+  const phi = rng.random() * 2 * Math.PI;
   const cosMaxAngle = Math.cos(maxAngleRad);
-  const cos_theta = Math.random() * (1 - cosMaxAngle) + cosMaxAngle;
+  const cos_theta = rng.random() * (1 - cosMaxAngle) + cosMaxAngle;
   const sin_theta = Math.sqrt(1 - cos_theta * cos_theta);
 
   let a: Vec3 = new Vec3(1, 0, 0);

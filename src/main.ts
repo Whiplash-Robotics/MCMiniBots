@@ -2,7 +2,7 @@ import { createBotForge, BotForge } from "../DSL/src/botforge.js"; // Adjusted i
 
 const bot: BotForge = createBotForge({
   host: "localhost",
-  port: 53293,
+  port: 3000,
   username: "AdminBot",
   version: "1.18.2",
   sensory: {
@@ -42,7 +42,7 @@ bot.once("spawn", () => {
 
       // Construct and execute the /particle command for only the most recent sound.
       const { x, y, z } = mostRecentSound.position;
-      const particleCommand = `/summon minecraft:area_effect_cloud ${x} ${y} ${z} {Particle:"minecraft:dolphin",WaitTime:600,Duration:0}`;
+      const particleCommand = `/summon minecraft:marker ${x} ${y} ${z} {Tags:["noise"]}`;
       bot.chat(particleCommand);
 
       // Update the timestamp to the sound we just processed.
