@@ -13,8 +13,8 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Use pg8000 driver by adding +pg8000
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+pg8000://devuser:devpass@localhost:5432/devdb'
+# Use psycopg2 (default driver for PostgreSQL)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://devuser:devpass@localhost:5432/devdb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
