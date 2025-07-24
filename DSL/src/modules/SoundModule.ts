@@ -1,7 +1,7 @@
 import { Bot } from "mineflayer";
 import { Vec3 } from "vec3";
 import { performance } from "node:perf_hooks";
-import { getFuzzySound } from "../../utils/vector.js"; // Assuming getFuzzySound is in this utils file
+import { getFuzzySound } from "../utils/vector.js"; // Assuming getFuzzySound is in this utils file
 
 export interface SoundEvent {
   readonly soundName: string;

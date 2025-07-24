@@ -2,8 +2,8 @@ import { Bot } from "mineflayer";
 import { TrackedPlayer, PlayerHealthStatus } from "../types.js";
 import { Entity } from "prismarine-entity";
 import { Vec3 } from "vec3";
-import * as vectorUtils from "../../utils/vector.js"; // Assuming these utils exist
-import * as botUtils from "../../utils/bot.js"; // Assuming these utils exist
+import * as vectorUtils from "../utils/vector.js"; // Assuming these utils exist
+import * as botUtils from "../utils/bot.js"; // Assuming these utils exist
 import _ from "lodash";
 /**
  * This internal class manages the sensory logic. It's not exported,
