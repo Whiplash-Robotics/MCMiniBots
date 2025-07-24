@@ -1,42 +1,34 @@
 import os
 from flask import Flask, request, jsonify
-import sqlite3
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+from datetime import datetime
 
 # --- Config ---
 UPLOAD_FOLDER = 'uploads'
-DB_PATH = os.path.join("db", "fileupload.db")
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
 # --- App Init ---
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
-# --- DB Helpers ---
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Use pg8000 driver by adding +pg8000
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+pg8000://devuser:devpass@localhost:5432/devdb'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-def init_db():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS uploads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT NOT NULL,
-            upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
+db = SQLAlchemy(app)
+
+# --- DB Model ---
+class Upload(db.Model):
+    __tablename__ = 'uploads'
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(255), nullable=False)
+    upload_time = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --- Utility ---
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # --- Routes ---
 @app.route('/upload', methods=['POST'])
@@ -54,10 +46,9 @@ def upload_file():
         file.save(save_path)
 
         # Save to DB
-        conn = get_db()
-        conn.execute('INSERT INTO uploads (filename) VALUES (?)', (filename,))
-        conn.commit()
-        conn.close()
+        new_upload = Upload(filename=filename)
+        db.session.add(new_upload)
+        db.session.commit()
 
         return jsonify({'message': f'File {filename} uploaded successfully'})
     else:
@@ -65,10 +56,12 @@ def upload_file():
 
 @app.route('/uploads', methods=['GET'])
 def list_uploads():
-    conn = get_db()
-    cursor = conn.execute('SELECT * FROM uploads ORDER BY upload_time DESC')
-    files = [dict(row) for row in cursor.fetchall()]
-    conn.close()
+    uploads = Upload.query.order_by(Upload.upload_time.desc()).all()
+    files = [{
+        'id': upload.id,
+        'filename': upload.filename,
+        'upload_time': upload.upload_time.isoformat()
+    } for upload in uploads]
     return jsonify(files)
 
 @app.route('/', methods=['GET'])
@@ -90,5 +83,6 @@ def upload_form():
 
 # --- Startup ---
 if __name__ == '__main__':
-    init_db()
+    with app.app_context():
+        db.create_all()
     app.run(host='0.0.0.0', port=5000)
