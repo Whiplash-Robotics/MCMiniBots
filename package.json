@@ -5,6 +5,8 @@
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsx src/main.ts",
+    "sound": "tsx src/tests/soundModuleBot.ts",
+    "sensory": "tsx src/tests/sensoryModuleBot.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "test:unit": "vitest run",
