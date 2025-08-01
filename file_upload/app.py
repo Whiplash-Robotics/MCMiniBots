@@ -14,7 +14,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Use psycopg2 (default driver for PostgreSQL)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://devuser:devpass@localhost:5432/devdb'
+app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+    'DATABASE_URL',
+    'postgresql://devuser:devpass@localhost:5432/devdb'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -33,26 +36,38 @@ def allowed_file(filename):
 # --- Routes ---
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
 
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(save_path)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Handle duplicate filenames
+            counter = 1
+            base_filename = filename
+            while os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename)):
+                name, ext = os.path.splitext(base_filename)
+                filename = f"{name}_{counter}{ext}"
+                counter += 1
 
-        # Save to DB
-        new_upload = Upload(filename=filename)
-        db.session.add(new_upload)
-        db.session.commit()
+            save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(save_path)
 
-        return jsonify({'message': f'File {filename} uploaded successfully'})
-    else:
-        return jsonify({'error': 'File type not allowed'}), 400
+            # Save to DB
+            new_upload = Upload(filename=filename)
+            db.session.add(new_upload)
+            db.session.commit()
+
+            return jsonify({'message': f'File {filename} uploaded successfully'})
+        else:
+            return jsonify({'error': 'File type not allowed'}), 400
+    except:
+        db.session.rollback()
+        return jsonify({'error': 'Upload failed'}), 500    
 
 @app.route('/uploads', methods=['GET'])
 def list_uploads():
@@ -84,5 +99,13 @@ def upload_form():
 # --- Startup ---
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-    app.run(host='0.0.0.0', port=5000)
+        try:
+            db.create_all()
+            print("Database tables created successfully")
+        except Exception as e:
+            print(f"Database initialization failed: {e}")
+            exit(1)
+    
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
+    
