@@ -69,7 +69,7 @@ def upload_file():
             return jsonify({'error': 'File type not allowed'}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'Upload Failed: str(e)'}), 500    
+        return jsonify({'error': f'Upload Failed: {str(e)}'}), 500    
 
 @app.route('/uploads', methods=['GET'])
 def list_uploads():
