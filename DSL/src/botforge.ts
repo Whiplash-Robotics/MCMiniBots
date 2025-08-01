@@ -6,6 +6,9 @@ import _ from "lodash";
 import { TrackedPlayer } from "./types.js";
 import { SensoryModule } from "./modules/SensoryModule.js";
 import { SoundModule, SoundEvent } from "./modules/SoundModule.js";
+import { PVPModule } from "./modules/PVPModule.js";
+
+import fs from "fs";
 export interface BotForgeOptions extends BotOptions {
   sensory?: {
     viewDistance?: number;
@@ -29,6 +32,7 @@ export interface BotForge {
 
   on: Bot["on"];
   once: Bot["once"];
+  attack: (targetUUID: string) => void;
   chat: (message: string) => void;
   // Add other essentials like bot.look, bot.setControlState, etc.
 
@@ -36,6 +40,8 @@ export interface BotForge {
   getTrackedPlayers(): TrackedPlayer[];
   findNearestEnemy(): TrackedPlayer | null;
   getRecentSounds(): SoundEvent[];
+  readonly strongAttackCharged: boolean;
+  readonly damageMultiplier: number;
 }
 
 /**
@@ -53,11 +59,20 @@ export function createBotForge(options: BotForgeOptions): BotForge {
   const bot = mineflayer.createBot(botOptions);
   const sensoryModule = new SensoryModule(bot, sensory);
   const soundModule = new SoundModule(bot, sound);
-
+  const pvpModule = new PVPModule(bot);
   (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
   (bot as any).findNearestEnemy = sensoryModule.findNearestEnemy;
   (bot as any).getRecentSounds = soundModule.getRecentSounds;
+  // Getters must be defined using Object.defineProperty
+  Object.defineProperty(bot, "strongAttackCharged", {
+    get: () => pvpModule.strongAttackCharged,
+    enumerable: true, // This allows the property to be iterated over
+  });
 
+  Object.defineProperty(bot, "damageMultiplier", {
+    get: () => pvpModule.damageMultiplier,
+    enumerable: true,
+  });
   const allowedProperties = new Set<string | symbol>([
     // Essential read-only properties
     "username",
@@ -70,6 +85,7 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     // Essential actions
     "chat",
     "look",
+    "attack",
     //"setControlState",
     // ^ other crucial methods your bot will need to function.
 
@@ -77,6 +93,8 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     "getTrackedPlayers",
     "findNearestEnemy",
     "getRecentSounds",
+    "strongAttackCharged",
+    "damageMultiplier",
   ]);
   // 3. Create the Proxy Handler
   const handler: ProxyHandler<Bot> = {
