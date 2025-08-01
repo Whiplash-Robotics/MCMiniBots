@@ -11,10 +11,12 @@ ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 # --- App Init ---
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # Max 16MB
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Use psycopg2 (default driver for PostgreSQL)
-app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     'DATABASE_URL',
     'postgresql://devuser:devpass@localhost:5432/devdb'
 )
@@ -65,9 +67,9 @@ def upload_file():
             return jsonify({'message': f'File {filename} uploaded successfully'})
         else:
             return jsonify({'error': 'File type not allowed'}), 400
-    except:
+    except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Upload failed'}), 500    
+        return jsonify({'error': f'Upload Failed: str(e)'}), 500    
 
 @app.route('/uploads', methods=['GET'])
 def list_uploads():
