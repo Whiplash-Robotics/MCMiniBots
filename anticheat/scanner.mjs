@@ -18,6 +18,8 @@ const lines = code.split(/\r?\n/);
 
 const allowed_imports = JSON.parse(fs.readFileSync("./allowed.json", 'utf-8')).allowed;
 
+console.log(allowed_imports);
+
 const ast = parser.parse(code, {
     sourceType: 'module',
     plugins: ['typescript', 'jsx'],
@@ -35,7 +37,7 @@ traverse(ast, {
             node.arguments.length === 1 &&
             node.arguments[0].type === 'StringLiteral'
         ) {
-            imports.push(node.arguments[0].value);
+            imports.push({name: node.arguments[0].value, position: node.loc});
         }
     },
 });
@@ -44,7 +46,7 @@ var passed = true;
 
 for (let imp of imports) {
 
-    if (!allowed_imports.includes(imp)) {
+    if (!allowed_imports.includes(imp.name)) {
         passed = false;
 
         console.log(`\n${colors.white}Dissallowed import '${colors.white}${imp.name}${colors.white}' at (${colors.yellow}${imp.position.start.line}:${imp.position.start.column}${colors.white}) in ${colors.cyan}${process.argv[2]}${colors.white}:`);
