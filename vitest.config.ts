@@ -9,6 +9,9 @@ export default defineConfig({
       reporter: ["text", "json", "html"],
       reportsDirectory: "./coverage",
     },
-    include: ["DSL/src/**/*.test.ts"],
+    include: [
+      "DSL/src/**/*.test.ts",
+      "anticheat/**/*.test.ts",
+    ],
   },
 });
