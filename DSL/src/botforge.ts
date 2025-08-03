@@ -30,8 +30,12 @@ export interface BotForge {
   readonly username: string;
   readonly entity: Entity;
 
+  heldItem: Bot["heldItem"];
+  quickBarSlot: Bot["quickBarSlot"];
   on: Bot["on"];
   once: Bot["once"];
+  setQuickBarSlot: Bot["setQuickBarSlot"];
+  setControlState: Bot["setControlState"];
   attack: (targetUUID: string) => void;
   chat: (message: string) => void;
   // Add other essentials like bot.look, bot.setControlState, etc.
@@ -42,6 +46,7 @@ export interface BotForge {
   getRecentSounds(): SoundEvent[];
   readonly strongAttackCharged: boolean;
   readonly damageMultiplier: number;
+  readonly inCritWindow: boolean;
 }
 
 /**
@@ -63,6 +68,7 @@ export function createBotForge(options: BotForgeOptions): BotForge {
   (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
   (bot as any).findNearestEnemy = sensoryModule.findNearestEnemy;
   (bot as any).getRecentSounds = soundModule.getRecentSounds;
+
   // Getters must be defined using Object.defineProperty
   Object.defineProperty(bot, "strongAttackCharged", {
     get: () => pvpModule.strongAttackCharged,
@@ -73,10 +79,18 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     get: () => pvpModule.damageMultiplier,
     enumerable: true,
   });
+
+  Object.defineProperty(bot, "inCritWindow", {
+    get: () => pvpModule.inCritWindow,
+    enumerable: true,
+  });
+
   const allowedProperties = new Set<string | symbol>([
     // Essential read-only properties
     "username",
     "entity",
+    "heldItem",
+    "quickBarSlot",
 
     // Essential event listeners
     "on",
@@ -86,7 +100,8 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     "chat",
     "look",
     "attack",
-    //"setControlState",
+    "setQuickBarSlot",
+    "setControlState",
     // ^ other crucial methods your bot will need to function.
 
     // Our custom functions
@@ -95,6 +110,7 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     "getRecentSounds",
     "strongAttackCharged",
     "damageMultiplier",
+    "inCritWindow",
   ]);
   // 3. Create the Proxy Handler
   const handler: ProxyHandler<Bot> = {
