@@ -1,12 +1,12 @@
-import { createBotForge, BotForge } from "../DSL/src/botforge.js"; // Adjusted import path
+import { createBotForge, BotForge } from "../../DSL/src/botforge.js"; // Adjusted import path
 import mineflayer from "mineflayer";
 const uniqueId = Math.random().toString(36).slice(2);
-// const cheater = mineflayer.createBot({
-//   host: "localhost",
-//   port: 3000,
-//   username: "CheaterBot" + uniqueId,
-//   version: "1.18.2",
-// });
+const cheater = mineflayer.createBot({
+  host: "localhost",
+  port: 3000,
+  username: "CheaterBot" + uniqueId,
+  version: "1.18.2",
+});
 const bot: BotForge = createBotForge({
   host: "localhost",
   port: 3000,
@@ -39,6 +39,11 @@ bot.on("spawn", () => {
   bot.setQuickBarSlot(0);
   bot.on("physicsTick", () => {
     if (bot.strongAttackCharged) {
+      bot.setControlState("jump", true);
+    } else {
+      bot.setControlState("jump", false);
+    }
+    if (bot.inCritWindow) {
       const target = bot.findNearestEnemy();
       if (target) {
         bot.attack(target.uuid);
