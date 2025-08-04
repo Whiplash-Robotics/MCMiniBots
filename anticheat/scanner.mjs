@@ -7,7 +7,6 @@ import traverse from "@babel/traverse";
 //1 - fail
 //2 - invalid file
 export function scanFile(filepath, allowedFilepath) {
-  console.log(filepath);
   const colors = {
     reset: "\x1b[0m",
     white: "\x1b[37m",
