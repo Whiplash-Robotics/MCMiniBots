@@ -1,41 +1,44 @@
-import { describe, it, expect } from "vitest";
-import {scanFile} from "./scanner.mjs"; // adjust path if needed
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { scanFile } from "./scanner.mjs";
 import fs from "fs";
 import path from "path";
 
 // Glob-like walk for ./examples/**
 function getExampleFiles(dir: string): string[] {
-    const files: string[] = [];
-    for (const item of fs.readdirSync(dir)) {
-        const full = path.join(dir, item);
-        const stat = fs.statSync(full);
-        if (stat.isDirectory()) {
-            files.push(...getExampleFiles(full));
-        } else if (full.endsWith(".ts") || full.endsWith(".js")) {
-            files.push(full);
-        }
+  const files: string[] = [];
+  for (const item of fs.readdirSync(dir)) {
+    const full = path.join(dir, item);
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) {
+      files.push(...getExampleFiles(full));
+    } else if (full.endsWith(".ts") || full.endsWith(".js")) {
+      files.push(full);
     }
-    return files;
+  }
+  return files;
 }
 
-// Allowed modules for this test
-const allowed = new Set(["react"]);
+describe("can enforce allowed modules", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
 
-describe("Scanner Test", () => {
-    const files = getExampleFiles("./anticheat/examples");
+  afterEach(() => {
+    vi.mocked(console.log).mockRestore();
+    vi.mocked(console.error).mockRestore();
+  });
 
-    for (const file of files) {
-        it(`Scans ${file}`, async () => {
-            //const path = file.replace("anticheat", ".");
-            //console.log(path);
-            const result = await scanFile(file, "./anticheat/allowed.json");
-            console.log(result);
-            console.log(file.replace("anticheat", "."));
-            if (file.includes("bad")) {
-                expect(result).toBe(1);
-            } else {
-                expect(result).toBe(0);
-            }
-        });
-    }
+  const files = getExampleFiles("./anticheat/examples");
+
+  for (const file of files) {
+    it(`Scans ${file}`, async () => {
+      const result = await scanFile(file, "./anticheat/allowed.json");
+      if (file.includes("bad")) {
+        expect(result).toBe(1);
+      } else {
+        expect(result).toBe(0);
+      }
+    });
+  }
 });
