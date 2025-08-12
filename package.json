@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "test:unit": "vitest run",
-    "test:unit:watch": "vitest"
+    "test:unit:watch": "vitest",
+    "anticheat": "tsx anticheat/scanner.mjs"
   },
   "keywords": [],
   "author": "",
