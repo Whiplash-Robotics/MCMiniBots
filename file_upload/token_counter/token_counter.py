@@ -32,8 +32,8 @@ def count_tokens(javascript_code):
     for token in tokens:
         if token.type == "String":
             token.value = token.value.strip('"').strip("'")
-            string_tokens = ENCODING.encode(token.value)
-            for tok in string_tokens:
+            encoded_tokens = ENCODING.encode(token.value)
+            for tok in encoded_tokens:
                 string_tokens.append(ENCODING.decode([tok]))
         else:
             code_tokens.append(token)
