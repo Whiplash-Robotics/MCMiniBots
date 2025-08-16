@@ -4,7 +4,7 @@ import esprima
 import tiktoken
 
 # --- Config ---
-ENCODING = tiktoken.get_encoding("cl100k_base")
+ENCODING = "cl100k_base"
 ESPRIMA_OPTIONS = {
     "comment": False,
     "tolerant": False,
@@ -24,6 +24,7 @@ def read_file(file_path):
 # --- Token Counting ---
 # This function counts tokens in JavaScript code, separating code tokens and string tokens.
 def count_tokens(javascript_code):
+    encoding = tiktoken.get_encoding(ENCODING)
     code_tokens = []
     string_tokens = []
 
@@ -31,10 +32,13 @@ def count_tokens(javascript_code):
 
     for token in tokens:
         if token.type == "String":
-            token.value = token.value.strip('"').strip("'")
-            encoded_tokens = ENCODING.encode(token.value)
-            for tok in encoded_tokens:
-                string_tokens.append(ENCODING.decode([tok]))
+            string_content = token.value[1:-1] if len(token.value) >= 2 else ""
+
+            if not string_content:
+                string_tokens.append(0)
+            else:
+                encoded_tokens = encoding.encode(string_content)
+                string_tokens.extend(encoded_tokens)
         else:
             code_tokens.append(token)
 
