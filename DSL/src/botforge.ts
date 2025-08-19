@@ -8,7 +8,6 @@ import { SensoryModule } from "./modules/SensoryModule.js";
 import { SoundModule, SoundEvent } from "./modules/SoundModule.js";
 import { PVPModule } from "./modules/PVPModule.js";
 
-import fs from "fs";
 export interface BotForgeOptions extends BotOptions {
   sensory?: {
     viewDistance?: number;
@@ -36,6 +35,10 @@ export interface BotForge {
   once: Bot["once"];
   setQuickBarSlot: Bot["setQuickBarSlot"];
   setControlState: Bot["setControlState"];
+  lookAt: Bot["lookAt"];
+  activateItem: Bot["activateItem"];
+  deactivateItem: Bot["deactivateItem"];
+
   attack: (targetUUID: string) => void;
   chat: (message: string) => void;
   // Add other essentials like bot.look, bot.setControlState, etc.
@@ -44,6 +47,7 @@ export interface BotForge {
   getTrackedPlayers(): TrackedPlayer[];
   findNearestEnemy(): TrackedPlayer | null;
   getRecentSounds(): SoundEvent[];
+
   readonly strongAttackCharged: boolean;
   readonly damageMultiplier: number;
   readonly inCritWindow: boolean;
@@ -65,6 +69,18 @@ export function createBotForge(options: BotForgeOptions): BotForge {
   const sensoryModule = new SensoryModule(bot, sensory);
   const soundModule = new SoundModule(bot, sound);
   const pvpModule = new PVPModule(bot);
+
+  const WALKING_SPEED = 4.317;
+
+  bot.on("spawn", () => {
+    const originalActivateItem = bot.activateItem.bind(bot);
+    const speed = 0.5;
+    console.log(bot.physics);
+    bot.activateItem = (offhand?: boolean) => {
+      bot.setControlState("sprint", false);
+      originalActivateItem(offhand);
+    };
+  });
   (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
   (bot as any).findNearestEnemy = sensoryModule.findNearestEnemy;
   (bot as any).getRecentSounds = soundModule.getRecentSounds;
@@ -102,6 +118,9 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     "attack",
     "setQuickBarSlot",
     "setControlState",
+    "activateItem",
+    "deactivateItem",
+    "lookAt",
     // ^ other crucial methods your bot will need to function.
 
     // Our custom functions
