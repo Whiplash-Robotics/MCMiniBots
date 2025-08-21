@@ -7,6 +7,7 @@ import { TrackedPlayer } from "./types.js";
 import { SensoryModule } from "./modules/SensoryModule.js";
 import { SoundModule, SoundEvent } from "./modules/SoundModule.js";
 import { PVPModule } from "./modules/PVPModule.js";
+import { MovementModule } from "./modules/MovementModule.js";
 
 export interface BotForgeOptions extends BotOptions {
   sensory?: {
@@ -43,6 +44,14 @@ export interface BotForge {
   chat: (message: string) => void;
   // Add other essentials like bot.look, bot.setControlState, etc.
 
+  moveForward: (duration: number) => void;
+  moveBackward: (duration: number) => void;
+  moveLeft: (duration: number) => void;
+  moveRight: (duration: number) => void;
+  jump: (duration: number) => void;
+  sneak: (duration: number) => void;
+  sprint: (duration: number) => void;
+
   // --- Our Custom Addons ---
   getTrackedPlayers(): TrackedPlayer[];
   findNearestEnemy(): TrackedPlayer | null;
@@ -69,13 +78,14 @@ export function createBotForge(options: BotForgeOptions): BotForge {
   const sensoryModule = new SensoryModule(bot, sensory);
   const soundModule = new SoundModule(bot, sound);
   const pvpModule = new PVPModule(bot);
+  const movementModule = new MovementModule(bot);
 
   const WALKING_SPEED = 4.317;
 
   bot.on("spawn", () => {
     const originalActivateItem = bot.activateItem.bind(bot);
     const speed = 0.5;
-    console.log(bot.physics);
+
     bot.activateItem = (offhand?: boolean) => {
       bot.setControlState("sprint", false);
       originalActivateItem(offhand);
@@ -84,6 +94,13 @@ export function createBotForge(options: BotForgeOptions): BotForge {
   (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
   (bot as any).findNearestEnemy = sensoryModule.findNearestEnemy;
   (bot as any).getRecentSounds = soundModule.getRecentSounds;
+  (bot as any).moveForward = movementModule.moveForward;
+  (bot as any).moveBackward = movementModule.moveBackward;
+  (bot as any).moveLeft = movementModule.moveLeft;
+  (bot as any).moveRight = movementModule.moveRight;
+  (bot as any).jump = movementModule.jump;
+  (bot as any).sneak = movementModule.sneak;
+  (bot as any).sprint = movementModule.sprint;
 
   // Getters must be defined using Object.defineProperty
   Object.defineProperty(bot, "strongAttackCharged", {
@@ -121,6 +138,15 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     "activateItem",
     "deactivateItem",
     "lookAt",
+
+    // Essential movement methods
+    "moveForward",
+    "moveBackward",
+    "moveLeft",
+    "moveRight",
+    "jump",
+    "sneak",
+    "sprint",
     // ^ other crucial methods your bot will need to function.
 
     // Our custom functions
