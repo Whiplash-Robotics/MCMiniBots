@@ -1,0 +1,8 @@
+{
+    "allowed": [
+        "createBotForge",
+        "BotForge",
+        "three",
+        "four"
+    ]
+}
