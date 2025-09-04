@@ -1,0 +1,8 @@
+{
+  "allowed": [
+    "mineflayer",
+    "pathfinding", 
+    "vec3",
+    "util"
+  ]
+}
