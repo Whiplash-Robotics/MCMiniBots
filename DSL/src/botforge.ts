@@ -32,6 +32,8 @@ export interface BotForge {
   heldItem: Bot["heldItem"];
   quickBarSlot: Bot["quickBarSlot"];
   on: Bot["on"];
+  food: Bot["food"];
+  getControlState: Bot["getControlState"];
   once: Bot["once"];
   setQuickBarSlot: Bot["setQuickBarSlot"];
   setControlState: Bot["setControlState"];
@@ -69,16 +71,35 @@ export function createBotForge(options: BotForgeOptions): BotForge {
   const sensoryModule = new SensoryModule(bot, sensory);
   const soundModule = new SoundModule(bot, sound);
   const pvpModule = new PVPModule(bot);
-
-  const WALKING_SPEED = 4.317;
-
+  const foods = [
+    "golden_carrot",
+    "cooked_beef",
+    "golden_apple",
+    "potion",
+    "milk_bucket",
+    "chorus_fruit",
+    "suspicious_stew",
+  ];
   bot.on("spawn", () => {
     const originalActivateItem = bot.activateItem.bind(bot);
-    const speed = 0.5;
-    console.log(bot.physics);
-    bot.activateItem = (offhand?: boolean) => {
-      bot.setControlState("sprint", false);
+    const originalDeactivateItem = bot.deactivateItem.bind(bot);
+    bot.activateItem = (offhand: boolean = false) => {
+      // If the bot is holding a shield and activating it
+
+      if (
+        bot.heldItem?.name === "shield" ||
+        bot.heldItem?.name === "bow" ||
+        foods.includes(bot.heldItem?.name || "")
+      ) {
+        //@ts-ignore
+        bot.physics.playerSpeed = 0.03;
+      }
       originalActivateItem(offhand);
+    };
+    bot.deactivateItem = () => {
+      //@ts-ignore
+      bot.physics.playerSpeed = 0.1;
+      originalDeactivateItem();
     };
   });
   (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
@@ -121,6 +142,8 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     "activateItem",
     "deactivateItem",
     "lookAt",
+    "food",
+    "getControlState",
     // ^ other crucial methods your bot will need to function.
 
     // Our custom functions

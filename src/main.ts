@@ -5,7 +5,7 @@ const bot: BotForge = createBotForge({
   host: "localhost",
   port: 3000,
   username: "AdminBot",
-  version: "1.18.2",
+  version: "1.21.4",
   sensory: {
     fovDegrees: 180,
     viewDistance: 128,
@@ -26,7 +26,7 @@ bot.on("spawn", () => {
 
   bot.setQuickBarSlot(0);
 
-  bot.setControlState("forward", true);
+  // bot.setControlState("forward", true);
   bot.setControlState("sprint", true);
 });
 

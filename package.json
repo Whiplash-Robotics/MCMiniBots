@@ -19,10 +19,10 @@
   "license": "ISC",
   "dependencies": {
     "mersenne-twister": "^1.1.0",
-    "minecraft-data": "^3.93.0",
+    "minecraft-data": "^3.97.0",
     "mineflayer": "^4.32.0",
     "prismarine-entity": "^2.5.0",
-    "prismarine-item": "^1.16.0"
+    "prismarine-item": "^1.17.0"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.20",
