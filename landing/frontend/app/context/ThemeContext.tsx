@@ -9,11 +9,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
     const saved = localStorage.getItem('theme');
     return saved ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     localStorage.setItem('theme', JSON.stringify(isDark));
     if (isDark) {
       document.documentElement.classList.add('dark');
