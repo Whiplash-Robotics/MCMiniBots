@@ -1,8 +1,1 @@
-{
-    "allowed": [
-        "createBotForge",
-        "BotForge",
-        "three",
-        "four"
-    ]
-}
+{"allowed": ["react", "lodash"]}

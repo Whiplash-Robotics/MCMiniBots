@@ -1,5 +1,3 @@
 async function invalid() {
-    const fs = await import('fs');
+    const fs = import('fs');
 }
-
-await invalid();

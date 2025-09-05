@@ -42,7 +42,7 @@ echo "This may take a few minutes on first run (downloading images)"
 echo
 
 # Build and start all services
-if ! docker compose up --build -d; then
+if ! docker-compose up --build -d; then
     echo
     echo -e "${RED}❌ Failed to start services!${NC}"
     echo "Check the error messages above and try again."
