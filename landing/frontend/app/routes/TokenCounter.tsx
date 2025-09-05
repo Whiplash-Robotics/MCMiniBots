@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Navbar from '../components/Navbar';
 import NeuroCard from '../components/NeuroCard';
 import NeuroButton from '../components/NeuroButton';
 import CodeEditor from '../components/CodeEditor';
@@ -50,7 +51,9 @@ const TokenCounter: React.FC = () => {
   const currentCategory = getCategory();
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen">
+      <Navbar />
+      <div className="px-6 py-8 space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gold-500 mb-2">Token Counter</h1>
         <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -170,6 +173,7 @@ const TokenCounter: React.FC = () => {
             </NeuroCard>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

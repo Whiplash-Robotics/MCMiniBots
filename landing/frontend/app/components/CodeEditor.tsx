@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import Editor from '@monaco-editor/react';
 import { useTheme } from '../context/ThemeContext';
 import NeuroCard from './NeuroCard';
+
+// Dynamic import for Monaco Editor to avoid SSR issues
+const Editor = React.lazy(() => import('@monaco-editor/react'));
 
 interface CodeEditorProps {
   value: string;
@@ -81,25 +83,36 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       </div>
 
       <NeuroCard className="overflow-hidden">
-        <Editor
-          height={height}
-          defaultLanguage="javascript"
-          theme={isDark ? 'vs-dark' : 'light'}
-          value={value}
-          onChange={handleChange}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            lineNumbers: 'on',
-            roundedSelection: false,
-            scrollBeyondLastLine: false,
-            automaticLayout: true,
-            tabSize: 2,
-            insertSpaces: true,
-            wordWrap: 'on',
-            padding: { top: 16, bottom: 16 },
-          }}
-        />
+        <React.Suspense 
+          fallback={
+            <div 
+              style={{ height }}
+              className="flex items-center justify-center text-gray-500"
+            >
+              Loading editor...
+            </div>
+          }
+        >
+          <Editor
+            height={height}
+            defaultLanguage="javascript"
+            theme={isDark ? 'vs-dark' : 'light'}
+            value={value}
+            onChange={handleChange}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              lineNumbers: 'on',
+              roundedSelection: false,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              tabSize: 2,
+              insertSpaces: true,
+              wordWrap: 'on',
+              padding: { top: 16, bottom: 16 },
+            }}
+          />
+        </React.Suspense>
       </NeuroCard>
     </div>
   );

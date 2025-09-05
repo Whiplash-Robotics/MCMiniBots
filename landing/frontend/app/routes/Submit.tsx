@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { redirect } from 'react-router';
+import { redirect, useNavigate } from 'react-router';
+import Navbar from '../components/Navbar';
 import NeuroCard from '../components/NeuroCard';
 import NeuroButton from '../components/NeuroButton';
 import CodeEditor from '../components/CodeEditor';
-import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 interface Submission {
@@ -13,6 +13,8 @@ interface Submission {
   codeTokens: number;
   stringTokens: number;
   totalTokens: number;
+  status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
   lastModified: string;
 }
 
@@ -40,16 +42,17 @@ export async function submitLoader({ request }: { request: Request }) {
 }
 
 const Submit: React.FC = () => {
-  const { user } = useAuth();
   const { isDark } = useTheme();
-
+  const navigate = useNavigate();
+  
+  const [user, setUser] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('lightweight');
   const [code, setCode] = useState('');
-  const [filename, setFilename] = useState('');
   const [tokens, setTokens] = useState({ code: 0, string: 0 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isEditing, setIsEditing] = useState<string | null>(null); // Track which category is being edited
 
   const categories = [
     { id: 'lightweight', name: 'Lightweight', limit: 512 },
@@ -62,17 +65,43 @@ const Submit: React.FC = () => {
   const totalTokens = tokens.code + tokens.string;
   const isOverLimit = currentCategory?.limit && totalTokens > currentCategory.limit;
 
-  // Keep the client-side check as fallback, but loader should handle this
-  if (!user) {
-    // In v7, you might want to use useNavigate() hook instead
-    // or rely entirely on the loader function above
-    window.location.href = '/login';
-    return null;
-  }
+  // Helper functions
+  const getSubmissionForCategory = (category: string) => {
+    return submissions.find(sub => sub.category === category);
+  };
+
+  const generateFilename = (category: string, username: string) => {
+    return `${username}_${category}_bot.js`;
+  };
+
+  const getCurrentSubmission = () => getSubmissionForCategory(selectedCategory);
+  const isCurrentlyEditing = isEditing === selectedCategory;
+
+  // Check authentication on client side
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (!token || !userData) {
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      setUser(JSON.parse(userData));
+    } catch (error) {
+      console.error('Failed to parse user data:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
+  }, [navigate]);
 
   useEffect(() => {
-    fetchUserSubmissions();
-  }, []);
+    if (user) {
+      fetchUserSubmissions();
+    }
+  }, [user]);
 
   const fetchUserSubmissions = async () => {
     try {
@@ -89,11 +118,6 @@ const Submit: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!filename.trim()) {
-      setMessage({ type: 'error', text: 'Please enter a filename' });
-      return;
-    }
-
     if (!code.trim()) {
       setMessage({ type: 'error', text: 'Please enter some code' });
       return;
@@ -116,10 +140,10 @@ const Submit: React.FC = () => {
         },
         body: JSON.stringify({
           category: selectedCategory,
-          filename: filename.endsWith('.js') ? filename : `${filename}.js`,
-                             code,
-                             codeTokens: tokens.code,
-                             stringTokens: tokens.string,
+          filename: generateFilename(selectedCategory, user.username),
+          code,
+          codeTokens: tokens.code,
+          stringTokens: tokens.string,
         }),
       });
 
@@ -128,8 +152,8 @@ const Submit: React.FC = () => {
       if (response.ok) {
         setMessage({ type: 'success', text: data.message });
         setCode('');
-        setFilename('');
         setTokens({ code: 0, string: 0 });
+        setIsEditing(null);
         fetchUserSubmissions();
       } else {
         setMessage({ type: 'error', text: data.message || 'Failed to submit' });
@@ -141,135 +165,234 @@ const Submit: React.FC = () => {
     setIsSubmitting(false);
   };
 
-  const loadSubmission = (submission: Submission) => {
-    fetch(`/api/submissions/${submission.id}/code`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        setCode(data.code);
-        setFilename(submission.filename.replace('.js', ''));
-        setSelectedCategory(submission.category);
-      }
-    })
-    .catch(console.error);
+  const startEditing = (category: string) => {
+    const submission = getSubmissionForCategory(category);
+    if (submission) {
+      setIsEditing(category);
+      setSelectedCategory(category);
+      
+      // Load the submission code
+      fetch(`/api/submissions/${submission.id}/code`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setCode(data.code);
+        }
+      })
+      .catch(console.error);
+    } else {
+      // Start new submission for this category
+      setIsEditing(category);
+      setSelectedCategory(category);
+      setCode('');
+    }
   };
 
+  const cancelEditing = () => {
+    setIsEditing(null);
+    setCode('');
+    setMessage(null);
+  };
+
+  const loadSubmission = (submission: Submission) => {
+    startEditing(submission.category);
+  };
+
+  // Don't render anything if user is not loaded yet
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="space-y-8">
-    <div className="text-center">
-    <h1 className="text-3xl font-bold text-gold-500 mb-2">Submit Your Bot</h1>
-    <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-    Choose a category and upload your JavaScript bot
-    </p>
-    </div>
-
-    <div className="grid lg:grid-cols-3 gap-8">
-    <div className="lg:col-span-2 space-y-6">
-    <NeuroCard className="p-6 space-y-4">
-    <h3 className="text-lg font-semibold">Category Selection</h3>
-    <div className="grid grid-cols-2 gap-4">
-    {categories.map((category) => (
-      <button
-      key={category.id}
-      onClick={() => setSelectedCategory(category.id)}
-      className={`p-4 rounded-xl transition-all duration-200 text-left ${
-        selectedCategory === category.id
-        ? `bg-gold-500 text-white shadow-neuro-${isDark ? 'dark' : 'light'}`
-        : `${isDark ? 'bg-neuro-dark shadow-neuro-dark' : 'bg-neuro-light shadow-neuro-light'} hover:shadow-neuro-${isDark ? 'dark' : 'light'}-inset`
-      }`}
-      >
-      <div className="font-semibold">{category.name}</div>
-      <div className="text-sm opacity-75">
-      {category.limit ? `${category.limit} tokens` : 'Unlimited'}
-      </div>
-      </button>
-    ))}
-    </div>
-    </NeuroCard>
-
-    <NeuroCard className="p-6 space-y-4">
-    <div className="flex items-center space-x-4">
-    <input
-    type="text"
-    placeholder="Enter filename (without .js)"
-    value={filename}
-    onChange={(e) => setFilename(e.target.value)}
-    className={`flex-1 px-4 py-2 rounded-xl border-none outline-none transition-all duration-200 ${
-      isDark
-      ? 'bg-neuro-dark shadow-neuro-dark-inset text-white placeholder-gray-400'
-      : 'bg-neuro-light shadow-neuro-light-inset text-gray-800 placeholder-gray-500'
-    }`}
-    />
-    <div className="text-sm font-medium">.js</div>
-    </div>
-
-    {currentCategory && (
-      <div className="flex justify-between text-sm">
-      <span>Token limit: {currentCategory.limit || 'Unlimited'}</span>
-      <span className={`font-bold ${
-        isOverLimit ? 'text-red-500' : 'text-green-500'
-      }`}>
-      Current: {totalTokens}
-      </span>
-      </div>
-    )}
-    </NeuroCard>
-
-    <CodeEditor
-    value={code}
-    onChange={setCode}
-    onTokenCount={(codeTokens, stringTokens) => setTokens({ code: codeTokens, string: stringTokens })}
-    height="500px"
-    />
-
-    {message && (
-      <NeuroCard className={`p-4 ${
-        message.type === 'success' ? 'text-green-500' : 'text-red-500'
-      }`}>
-      {message.text}
-      </NeuroCard>
-    )}
-
-    <NeuroButton
-    onClick={handleSubmit}
-    variant="gold"
-    size="lg"
-    disabled={isSubmitting || !filename.trim() || !code.trim() || isOverLimit}
-    className="w-full"
-    >
-    {isSubmitting ? 'Submitting...' : 'Submit Bot'}
-    </NeuroButton>
-    </div>
-
-    <div className="space-y-6">
-    <NeuroCard className="p-6">
-    <h3 className="text-lg font-semibold mb-4">Your Submissions</h3>
-    {submissions.length === 0 ? (
-      <p className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-      No submissions yet
-      </p>
-    ) : (
-      <div className="space-y-3">
-      {submissions.map((submission) => (
-        <div
-        key={submission.id}
-        onClick={() => loadSubmission(submission)}
-        className={`p-3 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-neuro-${isDark ? 'dark' : 'light'}-inset ${
-          isDark ? 'bg-gray-800' : 'bg-gray-100'
-        }`}
-        >
-        <div className="font-medium">{submission.filename}</div>
-        <div className="text-sm opacity-75 capitalize">{submission.category}</div>
-        <div className="text-xs">{submission.totalTokens} tokens</div>
+    <div className="min-h-screen">
+      <Navbar />
+      <div className="px-6 py-8 space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gold-500 mb-2">Submit Your Bot</h1>
+          <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Choose a category and upload your JavaScript bot
+          </p>
         </div>
-      ))}
+
+        {/* Main Layout: Editor on left, Categories on right */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Editor Section - Left Side */}
+          <div className="lg:col-span-2">
+            {isEditing ? (
+              <div className="space-y-6">
+                <NeuroCard className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-gold-500">
+                      Editing: {categories.find(c => c.id === selectedCategory)?.name}
+                    </h3>
+                    <div className="text-sm">
+                      <span className={`font-bold ${isOverLimit ? 'text-red-500' : 'text-green-500'}`}>
+                        {totalTokens} / {currentCategory?.limit || '∞'} tokens
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="text-sm text-gray-500 mb-2">
+                      Filename: {generateFilename(selectedCategory, user.username)}
+                    </div>
+                  </div>
+
+                  <CodeEditor
+                    value={code}
+                    onChange={setCode}
+                    onTokenCount={(codeTokens, stringTokens) => setTokens({ code: codeTokens, string: stringTokens })}
+                    height="600px"
+                  />
+
+                  {message && (
+                    <NeuroCard className={`p-4 mt-4 ${
+                      message.type === 'success' 
+                        ? isDark ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'
+                        : isDark ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {message.text}
+                    </NeuroCard>
+                  )}
+
+                  <div className="flex space-x-4 mt-6">
+                    <NeuroButton
+                      onClick={handleSubmit}
+                      variant="gold"
+                      size="lg"
+                      disabled={isSubmitting || !code.trim() || isOverLimit}
+                      className="flex-1"
+                    >
+                      {isSubmitting ? 'Submitting...' : 
+                       getCurrentSubmission() ? 'Update Submission' : 'Create Submission'}
+                    </NeuroButton>
+                    <NeuroButton
+                      onClick={cancelEditing}
+                      variant="secondary"
+                      size="lg"
+                      className="flex-1"
+                    >
+                      Cancel
+                    </NeuroButton>
+                  </div>
+                </NeuroCard>
+              </div>
+            ) : (
+              <NeuroCard className="p-8 text-center">
+                <h3 className="text-2xl font-bold text-gold-500 mb-4">Ready to Code?</h3>
+                <p className={`text-lg mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Select a category from the sidebar to start creating or editing your bot submission.
+                </p>
+                <div className="text-sm opacity-75">
+                  You can have one submission per weight category. Each submission will be automatically 
+                  named and can be edited anytime before the tournament begins.
+                </div>
+              </NeuroCard>
+            )}
+          </div>
+
+          {/* Category Sidebar - Right Side */}
+          <div className="space-y-6">
+            <NeuroCard className="p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gold-500">Weight Categories</h3>
+              <div className="space-y-4">
+                {categories.map((category) => {
+                  const submission = getSubmissionForCategory(category.id);
+                  const isCurrentEditing = isEditing === category.id;
+                  
+                  return (
+                    <div key={category.id} className={`p-4 rounded-xl transition-all duration-200 ${
+                      isCurrentEditing 
+                        ? isDark ? 'bg-gold-900 border border-gold-500' : 'bg-gold-100 border border-gold-500'
+                        : isDark ? 'bg-gray-800' : 'bg-gray-100'
+                    }`}>
+                      <div className="mb-3">
+                        <h4 className="font-bold text-gold-500">{category.name}</h4>
+                        <p className="text-xs opacity-75">
+                          {category.limit ? `≤ ${category.limit} tokens` : 'Unlimited'}
+                        </p>
+                      </div>
+
+                      {submission ? (
+                        <div className="space-y-2">
+                          <div className={`p-2 rounded-lg text-xs ${
+                            submission.status === 'approved' 
+                              ? isDark ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'
+                              : submission.status === 'rejected'
+                              ? isDark ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-700'
+                              : isDark ? 'bg-yellow-900 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {submission.status === 'approved' ? '✅ Approved' : 
+                             submission.status === 'rejected' ? '❌ Rejected' : 
+                             '⏳ Pending Review'} • {submission.totalTokens} tokens
+                          </div>
+                          {submission.status === 'rejected' && submission.rejectionReason && (
+                            <div className={`p-2 rounded-lg text-xs ${
+                              isDark ? 'bg-red-950 text-red-300' : 'bg-red-50 text-red-700'
+                            }`}>
+                              <strong>Reason:</strong> {submission.rejectionReason}
+                            </div>
+                          )}
+                          <div className="text-xs opacity-75">
+                            Modified: {new Date(submission.lastModified).toLocaleDateString()}
+                          </div>
+                          {!isCurrentEditing ? (
+                            <NeuroButton
+                              onClick={() => startEditing(category.id)}
+                              size="sm"
+                              className="w-full"
+                            >
+                              Edit
+                            </NeuroButton>
+                          ) : (
+                            <NeuroButton
+                              onClick={cancelEditing}
+                              variant="secondary"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Cancel
+                            </NeuroButton>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className={`p-2 rounded-lg text-xs ${
+                            isDark ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'
+                          }`}>
+                            No submission
+                          </div>
+                          {!isCurrentEditing ? (
+                            <NeuroButton
+                              onClick={() => startEditing(category.id)}
+                              variant="gold"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Create
+                            </NeuroButton>
+                          ) : (
+                            <NeuroButton
+                              onClick={cancelEditing}
+                              variant="secondary"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Cancel
+                            </NeuroButton>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </NeuroCard>
+          </div>
+        </div>
       </div>
-    )}
-    </NeuroCard>
-    </div>
-    </div>
     </div>
   );
 };

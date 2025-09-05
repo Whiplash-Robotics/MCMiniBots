@@ -1,13 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Neumorphic Colors */
+  --color-neuro-light: #fefefe;
+  --color-neuro-dark: #1a1a1a;
+  --color-gold-400: #facc15;
+  --color-gold-500: #eab308;
+  --color-gold-600: #ca8a04;
+
+  /* Neumorphic Box Shadows */
+  --shadow-neuro-light:
+    -8px -8px 16px rgba(255, 255, 255, 0.8), 8px 8px 16px rgba(0, 0, 0, 0.15);
+  --shadow-neuro-light-inset:
+    inset 8px 8px 16px rgba(0, 0, 0, 0.15),
+    inset -8px -8px 16px rgba(255, 255, 255, 0.8);
+  --shadow-neuro-light-sm:
+    -4px -4px 8px rgba(255, 255, 255, 0.8), 4px 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-neuro-light-inset-sm:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+
+  --shadow-neuro-dark:
+    -8px -8px 16px rgba(255, 255, 255, 0.1), 8px 8px 16px rgba(0, 0, 0, 0.8);
+  --shadow-neuro-dark-inset:
+    inset 8px 8px 16px rgba(0, 0, 0, 0.8),
+    inset -8px -8px 16px rgba(255, 255, 255, 0.1);
+  --shadow-neuro-dark-sm:
+    -4px -4px 8px rgba(255, 255, 255, 0.1), 4px 4px 8px rgba(0, 0, 0, 0.8);
+  --shadow-neuro-dark-inset-sm:
+    inset 4px 4px 8px rgba(0, 0, 0, 0.8),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.1);
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-neuro-light dark:bg-neuro-dark;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;

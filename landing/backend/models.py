@@ -95,6 +95,7 @@ def init_db_models(database):
         string_tokens = db.Column(db.Integer, nullable=False)
         total_tokens = db.Column(db.Integer, nullable=False)
         status = db.Column(db.String(20), default='pending', nullable=False)  # pending, approved, rejected
+        rejection_reason = db.Column(db.Text, nullable=True)  # Store rejection reason when status is rejected
         created_at = db.Column(db.DateTime, default=datetime.utcnow)
         last_modified = db.Column(db.DateTime, default=datetime.utcnow)
         
