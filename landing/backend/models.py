@@ -102,5 +102,35 @@ def init_db_models(database):
         
         def __repr__(self):
             return f'<Submission {self.filename}>'
+
+    class LeaderboardSnapshot(db.Model):
+        __tablename__ = 'leaderboard_snapshots'
+        
+        id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+        submission_id = db.Column(db.String(36), db.ForeignKey('submissions.id'), nullable=False)
+        category = db.Column(db.String(50), nullable=False)
+        position = db.Column(db.Integer, nullable=False)  # 1-based position
+        score = db.Column(db.Float, nullable=True)  # Optional score metric
+        snapshot_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+        
+        def __repr__(self):
+            return f'<LeaderboardSnapshot {self.position} at {self.snapshot_date}>'
+
+    class SubmissionEditHistory(db.Model):
+        __tablename__ = 'submission_edit_history'
+        
+        id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+        submission_id = db.Column(db.String(36), db.ForeignKey('submissions.id'), nullable=False)
+        user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+        edit_type = db.Column(db.String(20), nullable=False)  # 'create', 'update', 'status_change'
+        previous_status = db.Column(db.String(20), nullable=True)
+        new_status = db.Column(db.String(20), nullable=True)
+        code_changed = db.Column(db.Boolean, default=False, nullable=False)
+        token_count_before = db.Column(db.Integer, nullable=True)
+        token_count_after = db.Column(db.Integer, nullable=True)
+        edit_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+        
+        def __repr__(self):
+            return f'<SubmissionEditHistory {self.edit_type} at {self.edit_date}>'
     
-    return User, Category, Submission
+    return User, Category, Submission, LeaderboardSnapshot, SubmissionEditHistory

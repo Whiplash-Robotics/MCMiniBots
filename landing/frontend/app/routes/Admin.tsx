@@ -67,9 +67,12 @@ interface User {
 
 interface Analytics {
   totalSubmissions: number;
-  submissionsByCategory: Record<string, number>;
   totalUsers: number;
   recentActivity: number;
+  weightCategories: Record<string, number>;
+  submissionsTimeline: Array<{ date: string; count: number }>;
+  leaderboardChanges: Array<{ date: string; changes: number }>;
+  editHeatmap: Array<[number, number, number]>; // [day_of_week, week_num, count]
 }
 
 // Loader function for route protection (recommended approach in v7)
@@ -721,18 +724,16 @@ const Admin: React.FC = () => {
 
                 {/* Charts Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Donut Chart - Category Distribution */}
+                  {/* 1. Weight Categories Pie Chart */}
                   <NeuroCard className="p-6">
-                    <h3 className="font-semibold mb-6 text-lg">Category Distribution</h3>
+                    <h3 className="font-semibold mb-6 text-lg">Weight Categories Distribution</h3>
                     <ClientOnlyChart
                       options={{
                         chart: {
-                          type: 'donut',
+                          type: 'pie',
                           background: 'transparent',
                         },
-                        labels: Object.keys(analytics.submissionsByCategory).map(cat => 
-                          cat.charAt(0).toUpperCase() + cat.slice(1)
-                        ),
+                        labels: ['Lightweight', 'Middleweight', 'Heavyweight', 'Superheavy'],
                         colors: ['#D4A574', '#B8956A', '#9C8560', '#807556'],
                         legend: {
                           position: 'bottom',
@@ -743,135 +744,176 @@ const Admin: React.FC = () => {
                         dataLabels: {
                           enabled: true,
                           style: {
-                            colors: ['#000']
-                          }
-                        },
-                        plotOptions: {
-                          pie: {
-                            donut: {
-                              size: '60%'
-                            }
+                            colors: ['#fff'],
+                            fontSize: '12px',
+                            fontWeight: 'bold'
                           }
                         },
                         theme: {
                           mode: isDark ? 'dark' : 'light'
                         }
-                      } as ApexOptions}
-                      series={Object.values(analytics.submissionsByCategory)}
-                      type="donut"
-                      height={300}
+                      }}
+                      series={[
+                        analytics.weightCategories.lightweight || 0,
+                        analytics.weightCategories.middleweight || 0,
+                        analytics.weightCategories.heavyweight || 0,
+                        analytics.weightCategories.superheavy || 0
+                      ]}
+                      type="pie"
+                      height={350}
                     />
                   </NeuroCard>
 
-                  {/* Bar Chart - Category Comparison */}
+                  {/* 2. Submissions Timeline */}
                   <NeuroCard className="p-6">
-                    <h3 className="font-semibold mb-6 text-lg">Submissions by Category</h3>
+                    <h3 className="font-semibold mb-6 text-lg">Active Submissions Over Time</h3>
                     <ClientOnlyChart
                       options={{
                         chart: {
-                          type: 'bar',
+                          type: 'line',
                           background: 'transparent',
-                          toolbar: {
-                            show: false
-                          }
+                          toolbar: { show: false }
                         },
-                        plotOptions: {
-                          bar: {
-                            horizontal: false,
-                            columnWidth: '55%',
-                            borderRadius: 4,
-                          },
+                        stroke: {
+                          width: 3,
+                          curve: 'smooth'
                         },
-                        dataLabels: {
-                          enabled: false,
-                        },
+                        colors: ['#D4A574'],
                         xaxis: {
-                          categories: Object.keys(analytics.submissionsByCategory).map(cat => 
-                            cat.charAt(0).toUpperCase() + cat.slice(1)
-                          ),
+                          categories: analytics.submissionsTimeline.map(d => d.date),
                           labels: {
-                            style: {
-                              colors: isDark ? '#e5e7eb' : '#374151'
-                            }
+                            style: { colors: isDark ? '#e5e7eb' : '#374151' },
+                            rotate: -45
                           }
                         },
                         yaxis: {
                           labels: {
-                            style: {
-                              colors: isDark ? '#e5e7eb' : '#374151'
-                            }
+                            style: { colors: isDark ? '#e5e7eb' : '#374151' }
                           }
-                        },
-                        colors: ['#D4A574'],
-                        theme: {
-                          mode: isDark ? 'dark' : 'light'
                         },
                         grid: {
                           borderColor: isDark ? '#374151' : '#e5e7eb',
-                        }
-                      } as ApexOptions}
+                        },
+                        theme: { mode: isDark ? 'dark' : 'light' }
+                      }}
                       series={[{
-                        name: 'Submissions',
-                        data: Object.values(analytics.submissionsByCategory)
+                        name: 'New Submissions',
+                        data: analytics.submissionsTimeline.map(d => d.count)
                       }]}
-                      type="bar"
-                      height={300}
+                      type="line"
+                      height={350}
                     />
                   </NeuroCard>
                 </div>
 
-                {/* Additional Analytics Chart */}
-                <NeuroCard className="p-6">
-                  <h3 className="font-semibold mb-6 text-lg">Overview Metrics</h3>
-                  <ClientOnlyChart
-                    options={{
-                      chart: {
-                        type: 'bar',
-                        background: 'transparent',
-                        toolbar: {
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* 3. Leaderboard Competitiveness */}
+                  <NeuroCard className="p-6">
+                    <h3 className="font-semibold mb-6 text-lg">Top 10% Position Changes</h3>
+                    <ClientOnlyChart
+                      options={{
+                        chart: {
+                          type: 'area',
+                          background: 'transparent',
+                          toolbar: { show: false }
+                        },
+                        stroke: {
+                          width: 2,
+                          curve: 'smooth'
+                        },
+                        fill: {
+                          type: 'gradient',
+                          gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.7,
+                            opacityTo: 0.1,
+                            stops: [0, 90, 100]
+                          }
+                        },
+                        colors: ['#FFD700'], // Yellow color
+                        dataLabels: {
+                          enabled: false // Remove floating labels
+                        },
+                        tooltip: {
+                          theme: isDark ? 'dark' : 'light'
+                        },
+                        xaxis: {
+                          categories: analytics.leaderboardChanges.map(d => d.date),
+                          labels: {
+                            style: { colors: isDark ? '#ffffff' : '#000000' },
+                            rotate: -45
+                          }
+                        },
+                        yaxis: {
+                          labels: {
+                            style: { colors: isDark ? '#ffffff' : '#000000' }
+                          }
+                        },
+                        grid: {
+                          borderColor: isDark ? '#374151' : '#e5e7eb',
+                        },
+                        theme: { mode: isDark ? 'dark' : 'light' }
+                      }}
+                      series={[{
+                        name: 'Position Changes',
+                        data: analytics.leaderboardChanges.map(d => d.changes)
+                      }]}
+                      type="area"
+                      height={350}
+                    />
+                  </NeuroCard>
+
+                  {/* 4. Bot Edits Heatmap */}
+                  <NeuroCard className="p-6">
+                    <h3 className="font-semibold mb-6 text-lg">Bot Edits Activity (90 days)</h3>
+                    <ClientOnlyChart
+                      options={{
+                        chart: {
+                          type: 'heatmap',
+                          background: 'transparent',
+                          toolbar: { show: false }
+                        },
+                        colors: ['#D4A574'],
+                        dataLabels: {
+                          enabled: false
+                        },
+                        xaxis: {
+                          categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                          labels: {
+                            style: { colors: isDark ? '#e5e7eb' : '#374151' }
+                          }
+                        },
+                        yaxis: {
+                          labels: {
+                            style: { colors: isDark ? '#e5e7eb' : '#374151' }
+                          }
+                        },
+                        theme: { mode: isDark ? 'dark' : 'light' },
+                        legend: {
                           show: false
                         }
-                      },
-                      plotOptions: {
-                        bar: {
-                          horizontal: true,
-                          borderRadius: 4,
-                        },
-                      },
-                      dataLabels: {
-                        enabled: false,
-                      },
-                      xaxis: {
-                        categories: ['Total Submissions', 'Total Users', 'Recent Activity (7d)'],
-                        labels: {
-                          style: {
-                            colors: isDark ? '#e5e7eb' : '#374151'
-                          }
-                        }
-                      },
-                      yaxis: {
-                        labels: {
-                          style: {
-                            colors: isDark ? '#e5e7eb' : '#374151'
-                          }
-                        }
-                      },
-                      colors: ['#D4A574'],
-                      theme: {
-                        mode: isDark ? 'dark' : 'light'
-                      },
-                      grid: {
-                        borderColor: isDark ? '#374151' : '#e5e7eb',
-                      }
-                    } as ApexOptions}
-                    series={[{
-                      name: 'Count',
-                      data: [analytics.totalSubmissions, analytics.totalUsers, analytics.recentActivity]
-                    }]}
-                    type="bar"
-                    height={200}
-                  />
-                </NeuroCard>
+                      }}
+                      series={(() => {
+                        // Group heatmap data by week
+                        const weeks: any = {};
+                        analytics.editHeatmap.forEach(([day, week, count]) => {
+                          if (!weeks[week]) weeks[week] = Array(7).fill(0);
+                          weeks[week][day] = count;
+                        });
+                        
+                        return Object.keys(weeks).map(week => ({
+                          name: `Week ${week}`,
+                          data: weeks[week].map((count: number, day: number) => ({
+                            x: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day],
+                            y: count
+                          }))
+                        }));
+                      })()}
+                      type="heatmap"
+                      height={350}
+                    />
+                  </NeuroCard>
+                </div>
               </div>
             )}
           </div>

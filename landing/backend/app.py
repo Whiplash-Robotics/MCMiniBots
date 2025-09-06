@@ -31,7 +31,7 @@ from utils.security_scanner import scan_code
 from admin_config import get_admin_accounts, is_admin_email, get_admin_by_email
 
 # Initialize models with database instance
-User, Category, Submission = init_db_models(db)
+User, Category, Submission, LeaderboardSnapshot, SubmissionEditHistory = init_db_models(db)
 
 def initialize_admin_accounts():
     """Initialize admin accounts from admin_config.py on startup."""
@@ -454,29 +454,100 @@ def admin_get_analytics():
     if not user or not user.is_admin:
         return jsonify({'success': False, 'message': 'Admin access required'}), 403
     
-    total_submissions = Submission.query.count()
-    total_users = User.query.count()
+    # 1. Weight Categories (4-segment pie chart)
+    weight_categories = ['lightweight', 'middleweight', 'heavyweight', 'superheavy']
+    category_data = {}
+    for category in weight_categories:
+        count = Submission.query.filter_by(category=category).count()
+        category_data[category] = count
     
-    # Recent activity (last 7 days)
-    week_ago = datetime.utcnow() - timedelta(days=7)
-    recent_activity = Submission.query.filter(
-        Submission.created_at >= week_ago
-    ).count()
+    # 2. Active Submissions Over Time (line graph)
+    # Get submissions grouped by date for the last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    submissions_timeline = db.session.query(
+        db.func.date(Submission.created_at).label('date'),
+        db.func.count(Submission.id).label('count')
+    ).filter(
+        Submission.created_at >= thirty_days_ago
+    ).group_by(db.func.date(Submission.created_at)).order_by('date').all()
     
-    # Submissions by category
-    categories = db.session.query(
-        Submission.category,
-        db.func.count(Submission.id)
-    ).group_by(Submission.category).all()
+    # Fill in missing dates with 0 counts
+    timeline_data = []
+    current_date = thirty_days_ago.date()
+    today = datetime.utcnow().date()
+    submission_dict = {str(date): count for date, count in submissions_timeline}
     
-    submissions_by_category = {cat: count for cat, count in categories}
+    while current_date <= today:
+        date_str = current_date.strftime('%Y-%m-%d')
+        count = submission_dict.get(str(current_date), 0)
+        timeline_data.append({'date': date_str, 'count': count})
+        current_date += timedelta(days=1)
+    
+    # 3. Leaderboard Position Changes (real data from LeaderboardSnapshot)
+    # Get position changes for the last 30 days
+    leaderboard_changes_data = []
+    for i in range(30):
+        date = (datetime.utcnow() - timedelta(days=29-i)).strftime('%Y-%m-%d')
+        # Count actual position changes from LeaderboardSnapshot table
+        # For now, since no leaderboard data exists, this will be 0
+        date_obj = datetime.strptime(date, '%Y-%m-%d').date()
+        next_day = date_obj + timedelta(days=1)
+        
+        # Count leaderboard snapshots for this date (indicating position changes)
+        changes = LeaderboardSnapshot.query.filter(
+            LeaderboardSnapshot.snapshot_date >= date_obj,
+            LeaderboardSnapshot.snapshot_date < next_day
+        ).count()
+        
+        leaderboard_changes_data.append({'date': date, 'changes': changes})
+    
+    # 4. Bot Edits Heatmap (daily edit activity)
+    # Get edit history for the last 90 days for heatmap
+    ninety_days_ago = datetime.utcnow() - timedelta(days=90)
+    
+    # Since we don't have edit history yet, use last_modified from submissions
+    # This will be replaced with actual edit history once we implement tracking
+    edit_activity = db.session.query(
+        db.func.date(Submission.last_modified).label('date'),
+        db.func.count(Submission.id).label('edits')
+    ).filter(
+        Submission.last_modified >= ninety_days_ago
+    ).group_by(db.func.date(Submission.last_modified)).all()
+    
+    # Format heatmap data (date -> edit count)
+    heatmap_data = {}
+    for date, edits in edit_activity:
+        heatmap_data[str(date)] = edits
+    
+    # Fill missing dates with 0
+    current_date = ninety_days_ago.date()
+    today = datetime.utcnow().date()
+    while current_date <= today:
+        date_str = str(current_date)
+        if date_str not in heatmap_data:
+            heatmap_data[date_str] = 0
+        current_date += timedelta(days=1)
+    
+    # Convert to array format for heatmap
+    heatmap_array = []
+    for date_str, count in sorted(heatmap_data.items()):
+        # Convert to format: [x, y, value] where x is day of week, y is week number
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+        day_of_week = date_obj.weekday()  # 0 = Monday
+        week_num = (date_obj - ninety_days_ago.date()).days // 7
+        heatmap_array.append([day_of_week, week_num, count])
     
     return jsonify({
         'success': True,
-        'totalSubmissions': total_submissions,
-        'totalUsers': total_users,
-        'recentActivity': recent_activity,
-        'submissionsByCategory': submissions_by_category
+        'weightCategories': category_data,
+        'submissionsTimeline': timeline_data,
+        'leaderboardChanges': leaderboard_changes_data,
+        'editHeatmap': heatmap_array,
+        'totalSubmissions': Submission.query.count(),
+        'totalUsers': User.query.count(),
+        'recentActivity': Submission.query.filter(
+            Submission.created_at >= datetime.utcnow() - timedelta(days=7)
+        ).count()
     })
 
 # User Management Admin Routes
