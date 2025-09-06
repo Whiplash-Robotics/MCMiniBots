@@ -344,8 +344,11 @@ def admin_update_submission_status(submission_id):
     # Handle rejection reason
     if data['status'] == 'rejected':
         submission.rejection_reason = data.get('rejectionReason', '')
-    else:
+    elif data['status'] == 'approved':
         submission.rejection_reason = None  # Clear rejection reason if approved
+    elif data['status'] == 'pending':
+        # Keep existing rejection reason when moving back to pending
+        pass
     
     db.session.commit()
     

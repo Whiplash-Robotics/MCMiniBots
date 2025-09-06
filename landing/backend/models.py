@@ -41,6 +41,7 @@ class Submission(db.Model if db else object):
     string_tokens = db.Column(db.Integer, nullable=False) if db else None
     total_tokens = db.Column(db.Integer, nullable=False) if db else None
     status = db.Column(db.String(20), default='pending', nullable=False) if db else None  # pending, approved, rejected
+    rejection_reason = db.Column(db.Text, nullable=True) if db else None  # Store rejection reason when status is rejected
     created_at = db.Column(db.DateTime, default=datetime.utcnow) if db else None
     last_modified = db.Column(db.DateTime, default=datetime.utcnow) if db else None
     
