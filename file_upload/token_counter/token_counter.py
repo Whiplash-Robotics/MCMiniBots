@@ -2,8 +2,10 @@ import os
 import sys
 import esprima
 import tiktoken
+import tempfile
 
 # --- Config ---
+IGNORE_DECORATOR = "//@token-ignore"
 ENCODING = "cl100k_base"
 ESPRIMA_OPTIONS = {
     "comment": False,
@@ -19,6 +21,37 @@ def read_file(file_path):
         raise FileNotFoundError(f"Error: File not found: {file_path}")
     with open(file_path, "r", encoding="utf-8") as file:
         return file.read()
+
+
+# --- Temporary File Creation ---
+# This function creates a temporary JavaScript file excluding lines marked with the ignore decorator.
+def create_temp_ignored_file(code):
+    lines = code.splitlines()
+    filtered_lines = []
+    ignoring = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped.startswith(IGNORE_DECORATOR):
+            ignoring = True
+            continue
+
+        if ignoring:
+            # Stop ignoring when blank line is found
+            if stripped == "":
+                ignoring = False
+            
+            continue
+
+        filtered_lines.append(line)
+
+    # Create temporary file
+    temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=".js", mode="w", encoding="utf-8")
+    temp_file.write("\n".join(filtered_lines))
+    temp_file.close()
+
+    return temp_file.name
 
 
 # --- Token Counting ---
@@ -47,7 +80,9 @@ def count_tokens(javascript_code):
 
 def tokenize_file(file_path):
     code = read_file(file_path)
-    return count_tokens(code)
+    temp_path = create_temp_ignored_file(code)
+    filtered_code = read_file(temp_path)
+    return count_tokens(filtered_code)
 
 
 # --- Entry Point ---
