@@ -47,7 +47,7 @@ def create_temp_ignored_file(code):
         filtered_lines.append(line)
 
     # Create temporary file
-    temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=".js", mode="w", encoding="utf-8")
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".js", mode="w", encoding="utf-8")
     temp_file.write("\n".join(filtered_lines))
     temp_file.close()
 
@@ -80,9 +80,14 @@ def count_tokens(javascript_code):
 
 def tokenize_file(file_path):
     code = read_file(file_path)
-    temp_path = create_temp_ignored_file(code)
-    filtered_code = read_file(temp_path)
-    return count_tokens(filtered_code)
+    temp_file = create_temp_ignored_file(code)
+
+    try:
+        filtered_code = read_file(temp_file)
+        return count_tokens(filtered_code)
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
 
 
 # --- Entry Point ---
