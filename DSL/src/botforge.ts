@@ -6,6 +6,9 @@ import _ from "lodash";
 import { TrackedPlayer } from "./types.js";
 import { SensoryModule } from "./modules/SensoryModule.js";
 import { SoundModule, SoundEvent } from "./modules/SoundModule.js";
+import { PVPModule } from "./modules/PVPModule.js";
+import { MovementModule } from "./modules/MovementModule.js";
+
 export interface BotForgeOptions extends BotOptions {
   sensory?: {
     viewDistance?: number;
@@ -27,15 +30,36 @@ export interface BotForge {
   readonly username: string;
   readonly entity: Entity;
 
+  heldItem: Bot["heldItem"];
+  quickBarSlot: Bot["quickBarSlot"];
   on: Bot["on"];
   once: Bot["once"];
+  setQuickBarSlot: Bot["setQuickBarSlot"];
+  setControlState: Bot["setControlState"];
+  lookAt: Bot["lookAt"];
+  activateItem: Bot["activateItem"];
+  deactivateItem: Bot["deactivateItem"];
+
+  attack: (targetUUID: string) => void;
   chat: (message: string) => void;
   // Add other essentials like bot.look, bot.setControlState, etc.
+
+  moveForward: (duration: number) => void;
+  moveBackward: (duration: number) => void;
+  moveLeft: (duration: number) => void;
+  moveRight: (duration: number) => void;
+  jump: (duration: number) => void;
+  sneak: (duration: number) => void;
+  sprint: (duration: number) => void;
 
   // --- Our Custom Addons ---
   getTrackedPlayers(): TrackedPlayer[];
   findNearestEnemy(): TrackedPlayer | null;
   getRecentSounds(): SoundEvent[];
+
+  readonly strongAttackCharged: boolean;
+  readonly damageMultiplier: number;
+  readonly inCritWindow: boolean;
 }
 
 /**
@@ -53,15 +77,53 @@ export function createBotForge(options: BotForgeOptions): BotForge {
   const bot = mineflayer.createBot(botOptions);
   const sensoryModule = new SensoryModule(bot, sensory);
   const soundModule = new SoundModule(bot, sound);
+  const pvpModule = new PVPModule(bot);
+  const movementModule = new MovementModule(bot);
 
+  const WALKING_SPEED = 4.317;
+
+  bot.on("spawn", () => {
+    const originalActivateItem = bot.activateItem.bind(bot);
+    const speed = 0.5;
+
+    bot.activateItem = (offhand?: boolean) => {
+      bot.setControlState("sprint", false);
+      originalActivateItem(offhand);
+    };
+  });
   (bot as any).getTrackedPlayers = sensoryModule.getTrackedPlayers;
   (bot as any).findNearestEnemy = sensoryModule.findNearestEnemy;
   (bot as any).getRecentSounds = soundModule.getRecentSounds;
+  (bot as any).moveForward = movementModule.moveForward;
+  (bot as any).moveBackward = movementModule.moveBackward;
+  (bot as any).moveLeft = movementModule.moveLeft;
+  (bot as any).moveRight = movementModule.moveRight;
+  (bot as any).jump = movementModule.jump;
+  (bot as any).sneak = movementModule.sneak;
+  (bot as any).sprint = movementModule.sprint;
+
+  // Getters must be defined using Object.defineProperty
+  Object.defineProperty(bot, "strongAttackCharged", {
+    get: () => pvpModule.strongAttackCharged,
+    enumerable: true, // This allows the property to be iterated over
+  });
+
+  Object.defineProperty(bot, "damageMultiplier", {
+    get: () => pvpModule.damageMultiplier,
+    enumerable: true,
+  });
+
+  Object.defineProperty(bot, "inCritWindow", {
+    get: () => pvpModule.inCritWindow,
+    enumerable: true,
+  });
 
   const allowedProperties = new Set<string | symbol>([
     // Essential read-only properties
     "username",
     "entity",
+    "heldItem",
+    "quickBarSlot",
 
     // Essential event listeners
     "on",
@@ -70,13 +132,30 @@ export function createBotForge(options: BotForgeOptions): BotForge {
     // Essential actions
     "chat",
     "look",
-    //"setControlState",
+    "attack",
+    "setQuickBarSlot",
+    "setControlState",
+    "activateItem",
+    "deactivateItem",
+    "lookAt",
+
+    // Essential movement methods
+    "moveForward",
+    "moveBackward",
+    "moveLeft",
+    "moveRight",
+    "jump",
+    "sneak",
+    "sprint",
     // ^ other crucial methods your bot will need to function.
 
     // Our custom functions
     "getTrackedPlayers",
     "findNearestEnemy",
     "getRecentSounds",
+    "strongAttackCharged",
+    "damageMultiplier",
+    "inCritWindow",
   ]);
   // 3. Create the Proxy Handler
   const handler: ProxyHandler<Bot> = {

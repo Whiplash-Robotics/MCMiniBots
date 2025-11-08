@@ -24,9 +24,6 @@ export function getFuzzySound(
   const R = relativeSourceVector.norm(); // .norm() is the magnitude in the vec3 library
 
   if (R === 0) {
-    console.warn(
-      "Source point is the same as the origin. Cannot determine a direction. Returning origin."
-    );
     return new Vec3(origin.x, origin.y, origin.z);
   }
 
