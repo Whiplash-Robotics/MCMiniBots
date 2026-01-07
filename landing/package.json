@@ -1,0 +1,20 @@
+{
+  "name": "mcminibots-landing",
+  "version": "1.0.0",
+  "description": "MCMiniBots Tournament Landing Page",
+  "scripts": {
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && python3 -m venv venv && venv/bin/pip install -r requirements.txt",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" --names \"backend,frontend\" --prefix-colors \"cyan,magenta\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && venv/bin/python3 app.py",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "db:init": "cd backend && venv/bin/python3 -c \"from app import app, db; app.app_context().push(); db.create_all()\"",
+    "db:create-admin": "cd backend && venv/bin/python3 create_admin.py"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
