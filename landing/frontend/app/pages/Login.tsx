@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import NeuroCard from '../components/NeuroCard';
-import NeuroInput from '../components/NeuroInput';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Input from '../components/Input';
+import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -35,7 +35,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto mt-16">
-      <NeuroCard className="p-8 space-y-6">
+      <Card className="p-8 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gold-500 mb-2">Login</h1>
           <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -44,7 +44,7 @@ const Login: React.FC = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <NeuroInput
+          <Input
             type="email"
             label="Email"
             placeholder="Enter your email"
@@ -53,7 +53,7 @@ const Login: React.FC = () => {
             disabled={isLoading}
           />
           
-          <NeuroInput
+          <Input
             type="password"
             label="Password"
             placeholder="Enter your password"
@@ -66,7 +66,7 @@ const Login: React.FC = () => {
             <div className="text-red-500 text-sm text-center">{error}</div>
           )}
 
-          <NeuroButton
+          <Button
             type="submit"
             variant="gold"
             size="lg"
@@ -74,7 +74,7 @@ const Login: React.FC = () => {
             className="w-full"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
-          </NeuroButton>
+          </Button>
         </form>
 
         <div className={`text-center text-sm ${
@@ -82,7 +82,7 @@ const Login: React.FC = () => {
         }`}>
           <p>Don't have an account? Contact an admin to register.</p>
         </div>
-      </NeuroCard>
+      </Card>
     </div>
   );
 };

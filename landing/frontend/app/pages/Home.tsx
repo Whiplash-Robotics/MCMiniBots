@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import { useTheme } from '../context/ThemeContext';
 
 const Home: React.FC = () => {
@@ -48,21 +48,21 @@ const Home: React.FC = () => {
         
         <div className="flex justify-center space-x-4">
           <Link to="/submit">
-            <NeuroButton variant="gold" size="lg">
+            <Button variant="gold" size="lg">
               Submit Your Bot
-            </NeuroButton>
+            </Button>
           </Link>
           <Link to="/token-counter">
-            <NeuroButton size="lg">
+            <Button size="lg">
               Check Token Count
-            </NeuroButton>
+            </Button>
           </Link>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {categories.map((category) => (
-          <NeuroCard key={category.name} className="p-6 text-center space-y-4" hoverable>
+          <Card key={category.name} className="p-6 text-center space-y-4" hoverable>
             <div className="text-4xl">{category.icon}</div>
             <h3 className="text-xl font-bold text-gold-500">{category.name}</h3>
             <div className={`text-2xl font-bold ${
@@ -75,11 +75,11 @@ const Home: React.FC = () => {
             }`}>
               {category.description}
             </p>
-          </NeuroCard>
+          </Card>
         ))}
       </div>
 
-      <NeuroCard className="p-8 space-y-6">
+      <Card className="p-8 space-y-6">
         <h2 className="text-2xl font-bold text-gold-500">Tournament Rules</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
@@ -107,7 +107,7 @@ const Home: React.FC = () => {
             </ul>
           </div>
         </div>
-      </NeuroCard>
+      </Card>
     </div>
   );
 };

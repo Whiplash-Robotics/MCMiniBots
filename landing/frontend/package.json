@@ -15,6 +15,7 @@
     "@react-router/serve": "^7.7.1",
     "apexcharts": "^5.3.4",
     "isbot": "^5.1.27",
+    "lucide-react": "^0.562.0",
     "react": "^19.1.0",
     "react-apexcharts": "^1.7.0",
     "react-dom": "^19.1.0",

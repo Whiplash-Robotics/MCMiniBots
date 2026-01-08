@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import Navbar from '../components/Navbar';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
+import Input from '../components/Input';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,15 +14,15 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
 
   const { isDark } = useTheme();
+  const { user, login } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Redirect if already logged in
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (user) {
       navigate('/');
     }
-  }, [navigate]);
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,25 +30,13 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const success = await login(email, password);
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Store the token and user data
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
+      if (success) {
         // Redirect to home page
         navigate('/');
       } else {
-        setError(data.message || 'Login failed');
+        setError('Login failed. Please check your credentials.');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -59,67 +49,45 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="px-6 py-8">
+      <div className="px-6 py-12">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gold-500 mb-2">Sign In</h1>
-            <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <h1 className={`text-4xl font-bold mb-2 ${isDark ? 'text-gold-400' : 'text-gold-600'}`}>Sign In</h1>
+            <div className={`h-0.5 w-16 mx-auto rounded-full mb-4 ${isDark ? 'bg-gold-500' : 'bg-gold-600'}`} />
+            <p className={`${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               Access your MCMinibots account
             </p>
           </div>
 
-          <NeuroCard className="p-8">
+          <Card className="p-8" glow={isDark}>
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className={`p-4 rounded-xl ${
-                  isDark 
-                    ? 'bg-red-900 text-red-300 shadow-neuro-dark-inset' 
-                    : 'bg-red-100 text-red-700 shadow-neuro-light-inset'
+                <div className={`p-4 rounded-lg border ${
+                  isDark
+                    ? 'bg-red-900/20 text-red-400 border-red-500/30'
+                    : 'bg-red-100 text-red-700 border-red-300'
                 }`}>
                   {error}
                 </div>
               )}
 
-              {/* Email */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isDark
-                      ? 'bg-neuro-dark shadow-neuro-dark-inset text-white placeholder-gray-500'
-                      : 'bg-neuro-light shadow-neuro-light-inset text-gray-800 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-gold-500`}
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
+              <Input
+                type="email"
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+              />
 
-              {/* Password */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isDark
-                      ? 'bg-neuro-dark shadow-neuro-dark-inset text-white placeholder-gray-500'
-                      : 'bg-neuro-light shadow-neuro-light-inset text-gray-800 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-gold-500`}
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
+              <Input
+                type="password"
+                label="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+              />
 
-              {/* Submit Button */}
-              <NeuroButton
+              <Button
                 type="submit"
                 variant="gold"
                 size="lg"
@@ -127,22 +95,21 @@ const Login: React.FC = () => {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Signing in...' : 'Sign In'}
-              </NeuroButton>
+              </Button>
 
-              {/* Register Link */}
-              <div className="text-center">
-                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              <div className="text-center pt-4">
+                <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                   Don't have an account?{' '}
-                  <Link 
-                    to="/register" 
-                    className="text-gold-500 hover:text-gold-400 font-medium"
+                  <Link
+                    to="/register"
+                    className={`font-semibold ${isDark ? 'text-gold-400 hover:text-gold-300' : 'text-gold-600 hover:text-gold-700'}`}
                   >
                     Create one
                   </Link>
                 </span>
               </div>
             </form>
-          </NeuroCard>
+          </Card>
         </div>
       </div>
     </div>

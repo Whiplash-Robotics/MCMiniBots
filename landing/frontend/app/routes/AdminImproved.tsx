@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { redirect } from 'react-router';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -36,31 +35,8 @@ interface Analytics {
   recentActivity: number;
 }
 
-// Loader function for route protection (recommended approach in v7)
-export async function adminLoader({ request }: { request: Request }) {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  // Verify admin status with your API
-  try {
-    const response = await fetch('/api/auth/verify', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!response.ok) {
-      throw redirect('/');
-    }
-    const data = await response.json();
-    if (!data.user?.isAdmin) {
-      throw redirect('/');
-    }
-  } catch (error) {
-    throw redirect('/');
-  }
-
-  return null;
-}
+// Note: Loaders run on server-side where localStorage is not available
+// Authentication is handled client-side in the useEffect and render check below
 
 const Admin: React.FC = () => {
   const { user } = useAuth();
@@ -81,9 +57,15 @@ const Admin: React.FC = () => {
   const [rejectionData, setRejectionData] = useState<{submissionId: string, reason: string} | null>(null);
   const [bulkRejectionData, setBulkRejectionData] = useState<{reason: string} | null>(null);
 
-  // Keep the client-side check as fallback, but loader should handle this
+  // Client-side admin check
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !user?.isAdmin) {
+      window.location.href = '/';
+    }
+  }, [user]);
+
+  // Don't render admin content for non-admins
   if (!user?.isAdmin) {
-    window.location.href = '/';
     return null;
   }
 
@@ -321,7 +303,7 @@ const Admin: React.FC = () => {
         </p>
       </div>
 
-      <NeuroCard className="p-6">
+      <Card className="p-6">
         <div className="flex flex-wrap gap-2 mb-6">
           {tabs.map((tab) => (
             <button
@@ -347,31 +329,31 @@ const Admin: React.FC = () => {
               <>
                 {selectedSubmissions.size > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <NeuroButton onClick={() => bulkUpdateSubmissions('approve')} variant="secondary" size="sm">
+                    <Button onClick={() => bulkUpdateSubmissions('approve')} variant="secondary" size="sm">
                       Approve Selected ({selectedSubmissions.size})
-                    </NeuroButton>
-                    <NeuroButton 
+                    </Button>
+                    <Button 
                       onClick={() => setBulkRejectionData({reason: ''})} 
                       variant="secondary" 
                       size="sm"
                       className="text-orange-500"
                     >
                       Reject Selected ({selectedSubmissions.size})
-                    </NeuroButton>
-                    <NeuroButton onClick={() => bulkUpdateSubmissions('delete')} variant="secondary" size="sm" className="text-red-500">
+                    </Button>
+                    <Button onClick={() => bulkUpdateSubmissions('delete')} variant="secondary" size="sm" className="text-red-500">
                       Delete Selected ({selectedSubmissions.size})
-                    </NeuroButton>
-                    <NeuroButton onClick={clearSubmissionSelection} variant="secondary" size="sm">
+                    </Button>
+                    <Button onClick={clearSubmissionSelection} variant="secondary" size="sm">
                       Clear Selection
-                    </NeuroButton>
+                    </Button>
                   </div>
                 )}
                 
                 {pendingSubmissions.length > 0 && (
                   <div className="flex gap-2 mb-4">
-                    <NeuroButton onClick={() => selectAllSubmissions(pendingSubmissions)} variant="secondary" size="sm">
+                    <Button onClick={() => selectAllSubmissions(pendingSubmissions)} variant="secondary" size="sm">
                       Select All
-                    </NeuroButton>
+                    </Button>
                   </div>
                 )}
                 
@@ -382,7 +364,7 @@ const Admin: React.FC = () => {
                     </p>
                   ) : (
                     pendingSubmissions.map((submission) => (
-                      <NeuroCard
+                      <Card
                         key={submission.id}
                         className={`p-4 hover:shadow-neuro-light-inset cursor-pointer ${
                           selectedSubmissions.has(submission.id) ? 'ring-2 ring-gold-500' : ''
@@ -414,7 +396,7 @@ const Admin: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </NeuroCard>
+                      </Card>
                     ))
                   )}
                 </div>
@@ -430,7 +412,7 @@ const Admin: React.FC = () => {
                   </p>
                 ) : (
                   submissions.map((submission) => (
-                    <NeuroCard
+                    <Card
                       key={submission.id}
                       className="p-4 hover:shadow-neuro-light-inset cursor-pointer"
                       onClick={() => viewCode(submission)}
@@ -458,7 +440,7 @@ const Admin: React.FC = () => {
                           <strong>Rejection reason:</strong> {submission.rejectionReason}
                         </div>
                       )}
-                    </NeuroCard>
+                    </Card>
                   ))
                 )}
               </div>
@@ -488,7 +470,7 @@ const Admin: React.FC = () => {
                     </p>
                   ) : (
                     users.map((user) => (
-                      <NeuroCard
+                      <Card
                         key={user.id}
                         className="p-4 hover:shadow-neuro-light-inset cursor-pointer"
                         onClick={() => setSelectedUser(user)}
@@ -510,7 +492,7 @@ const Admin: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                      </NeuroCard>
+                      </Card>
                     ))
                   )}
                 </div>
@@ -520,28 +502,28 @@ const Admin: React.FC = () => {
             {/* Analytics Tab */}
             {activeTab === 'analytics' && analytics && (
               <div className="grid md:grid-cols-2 gap-6">
-                <NeuroCard className="p-6 text-center">
+                <Card className="p-6 text-center">
                   <div className="text-3xl font-bold text-gold-500">{analytics.totalSubmissions}</div>
                   <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Total Submissions
                   </div>
-                </NeuroCard>
+                </Card>
                 
-                <NeuroCard className="p-6 text-center">
+                <Card className="p-6 text-center">
                   <div className="text-3xl font-bold text-gold-500">{analytics.totalUsers}</div>
                   <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Registered Users
                   </div>
-                </NeuroCard>
+                </Card>
                 
-                <NeuroCard className="p-6 text-center">
+                <Card className="p-6 text-center">
                   <div className="text-3xl font-bold text-gold-500">{analytics.recentActivity}</div>
                   <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Recent Activity (7d)
                   </div>
-                </NeuroCard>
+                </Card>
                 
-                <NeuroCard className="p-6">
+                <Card className="p-6">
                   <h3 className="font-semibold mb-4">By Category</h3>
                   <div className="space-y-2 text-sm">
                     {Object.entries(analytics.submissionsByCategory).map(([category, count]) => (
@@ -551,7 +533,7 @@ const Admin: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                </NeuroCard>
+                </Card>
               </div>
             )}
           </div>
@@ -559,7 +541,7 @@ const Admin: React.FC = () => {
           {/* Right Column - Code Preview & Details (Always Visible) */}
           <div className="space-y-4">
             {selectedSubmission && (
-              <NeuroCard className="p-4">
+              <Card className="p-4">
                 <h3 className="font-semibold mb-4">Submission Details</h3>
                 <div className="space-y-2 text-sm mb-4">
                   <div><strong>File:</strong> {selectedSubmission.filename}</div>
@@ -575,57 +557,57 @@ const Admin: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex space-x-2">
-                    <NeuroButton
+                    <Button
                       onClick={() => updateSubmissionStatus(selectedSubmission.id, 'approved')}
                       variant="secondary"
                       size="sm"
                       className="flex-1"
                     >
                       Approve
-                    </NeuroButton>
-                    <NeuroButton
+                    </Button>
+                    <Button
                       onClick={() => setRejectionData({submissionId: selectedSubmission.id, reason: ''})}
                       variant="secondary"
                       size="sm"
                       className="flex-1"
                     >
                       Reject
-                    </NeuroButton>
+                    </Button>
                   </div>
-                  <NeuroButton
+                  <Button
                     onClick={() => deleteSubmission(selectedSubmission.id)}
                     variant="secondary"
                     size="sm"
                     className="w-full text-red-500"
                   >
                     Delete
-                  </NeuroButton>
+                  </Button>
                 </div>
-              </NeuroCard>
+              </Card>
             )}
             
             {codeView && (
-              <NeuroCard className="p-4">
+              <Card className="p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold">Code Preview</h3>
-                  <NeuroButton
+                  <Button
                     onClick={copyCodeToClipboard}
                     variant="secondary"
                     size="sm"
                   >
                     📋 Copy
-                  </NeuroButton>
+                  </Button>
                 </div>
                 <div className={`p-4 rounded-lg font-mono text-sm max-h-96 overflow-auto ${
                   isDark ? 'bg-gray-800' : 'bg-gray-100'
                 }`}>
                   <pre>{codeView}</pre>
                 </div>
-              </NeuroCard>
+              </Card>
             )}
 
             {selectedUser && (
-              <NeuroCard className="p-4">
+              <Card className="p-4">
                 <h3 className="font-semibold mb-4">User Details</h3>
                 <div className="space-y-2 text-sm mb-4">
                   <div><strong>Username:</strong> {selectedUser.username}</div>
@@ -636,16 +618,16 @@ const Admin: React.FC = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <NeuroButton
+                  <Button
                     onClick={() => setResetPasswordData({userId: selectedUser.id, newPassword: ''})}
                     variant="secondary"
                     size="sm"
                     className="w-full"
                   >
                     Reset Password
-                  </NeuroButton>
+                  </Button>
                 </div>
-              </NeuroCard>
+              </Card>
             )}
           </div>
         </div>
@@ -653,7 +635,7 @@ const Admin: React.FC = () => {
         {/* Dialogs */}
         {rejectionData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <NeuroCard className="p-6 m-4 w-full max-w-md">
+            <Card className="p-6 m-4 w-full max-w-md">
               <h3 className="font-semibold mb-4">Reject Submission</h3>
               <div className="space-y-4">
                 <textarea
@@ -668,31 +650,31 @@ const Admin: React.FC = () => {
                   rows={4}
                 />
                 <div className="flex gap-2">
-                  <NeuroButton
+                  <Button
                     onClick={() => updateSubmissionStatus(rejectionData.submissionId, 'rejected', rejectionData.reason)}
                     variant="secondary"
                     size="sm"
                     className="flex-1 text-red-500"
                   >
                     Reject
-                  </NeuroButton>
-                  <NeuroButton
+                  </Button>
+                  <Button
                     onClick={() => setRejectionData(null)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
                   >
                     Cancel
-                  </NeuroButton>
+                  </Button>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         )}
 
         {bulkRejectionData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <NeuroCard className="p-6 m-4 w-full max-w-md">
+            <Card className="p-6 m-4 w-full max-w-md">
               <h3 className="font-semibold mb-4">Bulk Reject Submissions</h3>
               <div className="space-y-4">
                 <textarea
@@ -707,31 +689,31 @@ const Admin: React.FC = () => {
                   rows={4}
                 />
                 <div className="flex gap-2">
-                  <NeuroButton
+                  <Button
                     onClick={() => bulkUpdateSubmissions('reject', bulkRejectionData.reason)}
                     variant="secondary"
                     size="sm"
                     className="flex-1 text-red-500"
                   >
                     Reject ({selectedSubmissions.size})
-                  </NeuroButton>
-                  <NeuroButton
+                  </Button>
+                  <Button
                     onClick={() => setBulkRejectionData(null)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
                   >
                     Cancel
-                  </NeuroButton>
+                  </Button>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         )}
 
         {resetPasswordData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <NeuroCard className="p-6 m-4 w-full max-w-md">
+            <Card className="p-6 m-4 w-full max-w-md">
               <h3 className="font-semibold mb-4">Reset Password</h3>
               <div className="space-y-4">
                 <input
@@ -746,7 +728,7 @@ const Admin: React.FC = () => {
                   }`}
                 />
                 <div className="flex gap-2">
-                  <NeuroButton
+                  <Button
                     onClick={() => resetUserPassword(resetPasswordData.userId, resetPasswordData.newPassword)}
                     variant="secondary"
                     size="sm"
@@ -754,21 +736,21 @@ const Admin: React.FC = () => {
                     disabled={resetPasswordData.newPassword.length < 6}
                   >
                     Reset Password
-                  </NeuroButton>
-                  <NeuroButton
+                  </Button>
+                  <Button
                     onClick={() => setResetPasswordData(null)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
                   >
                     Cancel
-                  </NeuroButton>
+                  </Button>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         )}
-      </NeuroCard>
+      </Card>
     </div>
   );
 };

@@ -5,42 +5,129 @@
     "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-  /* Neumorphic Colors */
-  --color-neuro-light: #fefefe;
-  --color-neuro-dark: #1a1a1a;
-  --color-gold-400: #facc15;
-  --color-gold-500: #eab308;
-  --color-gold-600: #ca8a04;
+  /* Modern Gaming Color Palette */
+  /* Light Mode */
+  --color-bg-light: #f5f5f7;
+  --color-surface-light: #ffffff;
+  --color-surface-light-hover: #fafafa;
+  --color-border-light: #e5e5e7;
 
-  /* Neumorphic Box Shadows */
-  --shadow-neuro-light:
-    -8px -8px 16px rgba(255, 255, 255, 0.8), 8px 8px 16px rgba(0, 0, 0, 0.15);
-  --shadow-neuro-light-inset:
-    inset 8px 8px 16px rgba(0, 0, 0, 0.15),
-    inset -8px -8px 16px rgba(255, 255, 255, 0.8);
-  --shadow-neuro-light-sm:
-    -4px -4px 8px rgba(255, 255, 255, 0.8), 4px 4px 8px rgba(0, 0, 0, 0.15);
-  --shadow-neuro-light-inset-sm:
-    inset 4px 4px 8px rgba(0, 0, 0, 0.15),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+  /* Dark Mode - Deep, rich blacks with subtle warmth */
+  --color-bg-dark: #0a0a0a;
+  --color-surface-dark: #1a1a1a;
+  --color-surface-dark-hover: #222222;
+  --color-border-dark: #2a2a2a;
 
-  --shadow-neuro-dark:
-    -8px -8px 16px rgba(255, 255, 255, 0.1), 8px 8px 16px rgba(0, 0, 0, 0.8);
-  --shadow-neuro-dark-inset:
-    inset 8px 8px 16px rgba(0, 0, 0, 0.8),
-    inset -8px -8px 16px rgba(255, 255, 255, 0.1);
-  --shadow-neuro-dark-sm:
-    -4px -4px 8px rgba(255, 255, 255, 0.1), 4px 4px 8px rgba(0, 0, 0, 0.8);
-  --shadow-neuro-dark-inset-sm:
-    inset 4px 4px 8px rgba(0, 0, 0, 0.8),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.1);
+  /* Gold Accent Colors - Luxurious and eye-catching */
+  --color-gold-300: #ffd966;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+  --color-gold-700: #b45309;
+
+  /* Gaming Accent Colors */
+  --color-cyber-blue: #00d9ff;
+  --color-neon-purple: #b77bff;
+  --color-electric-green: #00ff88;
+
+  /* Status Colors */
+  --color-success: #00ff88;
+  --color-error: #ff4444;
+  --color-warning: #ffaa00;
+  --color-info: #00d9ff;
+
+  /* Shadows - Sleek and defined */
+  /* Light Mode Shadows */
+  --shadow-sm-light: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md-light: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg-light: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Dark Mode Shadows - More pronounced for depth */
+  --shadow-sm-dark: 0 1px 2px 0 rgba(0, 0, 0, 0.6);
+  --shadow-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-md-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -2px rgba(0, 0, 0, 0.6);
+  --shadow-lg-dark: 0 20px 25px -5px rgba(0, 0, 0, 0.9), 0 10px 10px -5px rgba(0, 0, 0, 0.7);
+
+  /* Gold Glow Effects */
+  --glow-gold-sm: 0 0 10px rgba(245, 158, 11, 0.3);
+  --glow-gold: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 30px rgba(245, 158, 11, 0.2);
+  --glow-gold-lg: 0 0 30px rgba(245, 158, 11, 0.5), 0 0 60px rgba(245, 158, 11, 0.3);
+
+  /* Gradient backgrounds for gaming aesthetic */
+  --gradient-gold: linear-gradient(135deg, var(--color-gold-400) 0%, var(--color-gold-600) 100%);
+  --gradient-dark: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
 }
 
 html,
 body {
-  @apply bg-neuro-light dark:bg-neuro-dark;
+  /* Background and text color are set via inline styles to prevent flash */
+  /* Keeping these classes as backup if inline styles fail */
+  @apply bg-bg-light dark:bg-bg-dark text-gray-900 dark:text-gray-100;
+  min-height: 100vh;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
   }
+}
+
+/* Ensure body takes full height and doesn't have its own background */
+body {
+  background: inherit;
+}
+
+/* Subtle grid pattern for background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(245, 158, 11, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 158, 11, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+}
+
+.dark body::before {
+  opacity: 0.05;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-bg-light dark:bg-bg-dark;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+  transition: background-color 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gold-500;
+}
+
+/* Selection color */
+::selection {
+  @apply bg-gold-500 text-white;
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: 2px;
 }

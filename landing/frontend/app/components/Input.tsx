@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 
-interface NeuroInputProps {
+interface InputProps {
   type?: 'text' | 'email' | 'password' | 'number';
   placeholder?: string;
   value?: string;
@@ -11,7 +11,7 @@ interface NeuroInputProps {
   label?: string;
 }
 
-const NeuroInput: React.FC<NeuroInputProps> = ({
+const Input: React.FC<InputProps> = ({
   type = 'text',
   placeholder,
   value,
@@ -23,22 +23,18 @@ const NeuroInput: React.FC<NeuroInputProps> = ({
   const { isDark } = useTheme();
 
   const baseClasses = `
-    w-full px-4 py-3 rounded-xl border-none outline-none transition-all duration-200
+    w-full px-4 py-3 rounded-lg border transition-all duration-200
     disabled:cursor-not-allowed disabled:opacity-50
   `;
 
-  const shadowClasses = isDark
-    ? 'shadow-neuro-dark-inset focus:shadow-neuro-dark'
-    : 'shadow-neuro-light-inset focus:shadow-neuro-light';
-
-  const backgroundClasses = isDark
-    ? 'bg-neuro-dark text-white placeholder-gray-400'
-    : 'bg-neuro-light text-gray-800 placeholder-gray-500';
+  const inputClasses = isDark
+    ? 'bg-surface-dark text-gray-100 placeholder-gray-500 border-border-dark focus:border-gold-500 focus:[box-shadow:var(--shadow-md-dark),var(--glow-gold-sm)]'
+    : 'bg-surface-light text-gray-900 placeholder-gray-400 border-border-light focus:border-gold-500 focus:[box-shadow:var(--shadow-md-light)]';
 
   return (
     <div className={className}>
       {label && (
-        <label className={`block text-sm font-medium mb-2 ${
+        <label className={`block text-sm font-semibold mb-2 ${
           isDark ? 'text-gray-300' : 'text-gray-700'
         }`}>
           {label}
@@ -52,12 +48,11 @@ const NeuroInput: React.FC<NeuroInputProps> = ({
         disabled={disabled}
         className={`
           ${baseClasses}
-          ${shadowClasses}
-          ${backgroundClasses}
+          ${inputClasses}
         `}
       />
     </div>
   );
 };
 
-export default NeuroInput;
+export default Input;

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { redirect, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import Navbar from '../components/Navbar';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import CodeEditor from '../components/CodeEditor';
 import { useTheme } from '../context/ThemeContext';
 
@@ -18,28 +18,8 @@ interface Submission {
   lastModified: string;
 }
 
-// Loader function for route protection (recommended approach in v7)
-export async function submitLoader({ request }: { request: Request }) {
-  // Check if user is authenticated
-  const token = localStorage.getItem('token');
-  if (!token) {
-    throw redirect('/login');
-  }
-
-  // Optionally verify token with your API
-  try {
-    const response = await fetch('/api/auth/verify', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!response.ok) {
-      throw redirect('/login');
-    }
-  } catch (error) {
-    throw redirect('/login');
-  }
-
-  return null;
-}
+// Note: Loaders run on server-side where localStorage is not available
+// Authentication is handled client-side in the useEffect below
 
 const Submit: React.FC = () => {
   const { isDark } = useTheme();
@@ -222,7 +202,7 @@ const Submit: React.FC = () => {
           <div className="lg:col-span-2">
             {isEditing ? (
               <div className="space-y-6">
-                <NeuroCard className="p-6">
+                <Card className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-bold text-gold-500">
                       Editing: {categories.find(c => c.id === selectedCategory)?.name}
@@ -248,17 +228,17 @@ const Submit: React.FC = () => {
                   />
 
                   {message && (
-                    <NeuroCard className={`p-4 mt-4 ${
+                    <Card className={`p-4 mt-4 ${
                       message.type === 'success' 
                         ? isDark ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'
                         : isDark ? 'bg-red-900 text-red-300' : 'bg-red-100 text-red-700'
                     }`}>
                       {message.text}
-                    </NeuroCard>
+                    </Card>
                   )}
 
                   <div className="flex space-x-4 mt-6">
-                    <NeuroButton
+                    <Button
                       onClick={handleSubmit}
                       variant="gold"
                       size="lg"
@@ -267,20 +247,20 @@ const Submit: React.FC = () => {
                     >
                       {isSubmitting ? 'Submitting...' : 
                        getCurrentSubmission() ? 'Update Submission' : 'Create Submission'}
-                    </NeuroButton>
-                    <NeuroButton
+                    </Button>
+                    <Button
                       onClick={cancelEditing}
                       variant="secondary"
                       size="lg"
                       className="flex-1"
                     >
                       Cancel
-                    </NeuroButton>
+                    </Button>
                   </div>
-                </NeuroCard>
+                </Card>
               </div>
             ) : (
-              <NeuroCard className="p-8 text-center">
+              <Card className="p-8 text-center">
                 <h3 className="text-2xl font-bold text-gold-500 mb-4">Ready to Code?</h3>
                 <p className={`text-lg mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Select a category from the sidebar to start creating or editing your bot submission.
@@ -289,13 +269,13 @@ const Submit: React.FC = () => {
                   You can have one submission per weight category. Each submission will be automatically 
                   named and can be edited anytime before the tournament begins.
                 </div>
-              </NeuroCard>
+              </Card>
             )}
           </div>
 
           {/* Category Sidebar - Right Side */}
           <div className="space-y-6">
-            <NeuroCard className="p-6">
+            <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4 text-gold-500">Weight Categories</h3>
               <div className="space-y-4">
                 {categories.map((category) => {
@@ -339,22 +319,22 @@ const Submit: React.FC = () => {
                             Modified: {new Date(submission.lastModified).toLocaleDateString()}
                           </div>
                           {!isCurrentEditing ? (
-                            <NeuroButton
+                            <Button
                               onClick={() => startEditing(category.id)}
                               size="sm"
                               className="w-full"
                             >
                               Edit
-                            </NeuroButton>
+                            </Button>
                           ) : (
-                            <NeuroButton
+                            <Button
                               onClick={cancelEditing}
                               variant="secondary"
                               size="sm"
                               className="w-full"
                             >
                               Cancel
-                            </NeuroButton>
+                            </Button>
                           )}
                         </div>
                       ) : (
@@ -365,23 +345,23 @@ const Submit: React.FC = () => {
                             No submission
                           </div>
                           {!isCurrentEditing ? (
-                            <NeuroButton
+                            <Button
                               onClick={() => startEditing(category.id)}
                               variant="gold"
                               size="sm"
                               className="w-full"
                             >
                               Create
-                            </NeuroButton>
+                            </Button>
                           ) : (
-                            <NeuroButton
+                            <Button
                               onClick={cancelEditing}
                               variant="secondary"
                               size="sm"
                               className="w-full"
                             >
                               Cancel
-                            </NeuroButton>
+                            </Button>
                           )}
                         </div>
                       )}
@@ -389,7 +369,7 @@ const Submit: React.FC = () => {
                   );
                 })}
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         </div>
       </div>

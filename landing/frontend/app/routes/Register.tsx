@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import Navbar from '../components/Navbar';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
+import Input from '../components/Input';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 interface FormData {
   username: string;
@@ -14,6 +16,7 @@ interface FormData {
 
 const Register: React.FC = () => {
   const { isDark } = useTheme();
+  const { setAuthData } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     username: '',
@@ -78,10 +81,9 @@ const Register: React.FC = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Store the token and user data
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
+        // Store the token and user data in AuthContext
+        setAuthData(data.token, data.user);
+
         // Redirect to home page
         navigate('/');
       } else {
@@ -108,117 +110,98 @@ const Register: React.FC = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="px-6 py-8">
+      <div className="px-6 py-12">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gold-500 mb-2">Create Account</h1>
-            <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <h1 className={`text-4xl font-bold mb-2 ${isDark ? 'text-gold-400' : 'text-gold-600'}`}>Create Account</h1>
+            <div className={`h-0.5 w-16 mx-auto rounded-full mb-4 ${isDark ? 'bg-gold-500' : 'bg-gold-600'}`} />
+            <p className={`${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               Join the MCMinibots Tournament
             </p>
           </div>
 
-          <NeuroCard className="p-8">
+          <Card className="p-8" glow={isDark}>
             <form onSubmit={handleSubmit} className="space-y-6">
               {apiError && (
-                <div className={`p-4 rounded-xl ${
-                  isDark 
-                    ? 'bg-red-900 text-red-300 shadow-neuro-dark-inset' 
-                    : 'bg-red-100 text-red-700 shadow-neuro-light-inset'
+                <div className={`p-4 rounded-lg border ${
+                  isDark
+                    ? 'bg-red-900/20 text-red-400 border-red-500/30'
+                    : 'bg-red-100 text-red-700 border-red-300'
                 }`}>
                   {apiError}
                 </div>
               )}
 
               {/* Username */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Username
-                </label>
-                <input
+              <div>
+                <Input
                   type="text"
-                  name="username"
+                  label="Username"
                   value={formData.username}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isDark
-                      ? 'bg-neuro-dark shadow-neuro-dark-inset text-white placeholder-gray-500'
-                      : 'bg-neuro-light shadow-neuro-light-inset text-gray-800 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-gold-500`}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, username: e.target.value }));
+                    if (errors.username) setErrors(prev => ({ ...prev, username: '' }));
+                  }}
                   placeholder="Enter your username"
                 />
                 {errors.username && (
-                  <p className="text-red-500 text-sm">{errors.username}</p>
+                  <p className={`text-sm mt-1 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{errors.username}</p>
                 )}
               </div>
 
               {/* Email */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Email
-                </label>
-                <input
+              <div>
+                <Input
                   type="email"
-                  name="email"
+                  label="Email"
                   value={formData.email}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isDark
-                      ? 'bg-neuro-dark shadow-neuro-dark-inset text-white placeholder-gray-500'
-                      : 'bg-neuro-light shadow-neuro-light-inset text-gray-800 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-gold-500`}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, email: e.target.value }));
+                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                  }}
                   placeholder="Enter your email"
                 />
                 {errors.email && (
-                  <p className="text-red-500 text-sm">{errors.email}</p>
+                  <p className={`text-sm mt-1 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{errors.email}</p>
                 )}
               </div>
 
               {/* Password */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Password
-                </label>
-                <input
+              <div>
+                <Input
                   type="password"
-                  name="password"
+                  label="Password"
                   value={formData.password}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isDark
-                      ? 'bg-neuro-dark shadow-neuro-dark-inset text-white placeholder-gray-500'
-                      : 'bg-neuro-light shadow-neuro-light-inset text-gray-800 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-gold-500`}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, password: e.target.value }));
+                    if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                  }}
                   placeholder="Enter your password"
                 />
                 {errors.password && (
-                  <p className="text-red-500 text-sm">{errors.password}</p>
+                  <p className={`text-sm mt-1 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{errors.password}</p>
                 )}
               </div>
 
               {/* Confirm Password */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">
-                  Confirm Password
-                </label>
-                <input
+              <div>
+                <Input
                   type="password"
-                  name="confirmPassword"
+                  label="Confirm Password"
                   value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isDark
-                      ? 'bg-neuro-dark shadow-neuro-dark-inset text-white placeholder-gray-500'
-                      : 'bg-neuro-light shadow-neuro-light-inset text-gray-800 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-gold-500`}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                    if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: '' }));
+                  }}
                   placeholder="Confirm your password"
                 />
                 {errors.confirmPassword && (
-                  <p className="text-red-500 text-sm">{errors.confirmPassword}</p>
+                  <p className={`text-sm mt-1 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{errors.confirmPassword}</p>
                 )}
               </div>
 
               {/* Submit Button */}
-              <NeuroButton
+              <Button
                 type="submit"
                 variant="gold"
                 size="lg"
@@ -226,22 +209,22 @@ const Register: React.FC = () => {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Creating Account...' : 'Create Account'}
-              </NeuroButton>
+              </Button>
 
               {/* Login Link */}
-              <div className="text-center">
-                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              <div className="text-center pt-4">
+                <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                   Already have an account?{' '}
-                  <Link 
-                    to="/login" 
-                    className="text-gold-500 hover:text-gold-400 font-medium"
+                  <Link
+                    to="/login"
+                    className={`font-semibold ${isDark ? 'text-gold-400 hover:text-gold-300' : 'text-gold-600 hover:text-gold-700'}`}
                   >
                     Sign in
                   </Link>
                 </span>
               </div>
             </form>
-          </NeuroCard>
+          </Card>
         </div>
       </div>
     </div>

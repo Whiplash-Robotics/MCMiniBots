@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import CodeEditor from '../components/CodeEditor';
 import { useTheme } from '../context/ThemeContext';
+import { Target, CheckCircle, XCircle } from 'lucide-react';
 
 const TokenCounter: React.FC = () => {
   const { isDark } = useTheme();
@@ -61,7 +62,7 @@ const TokenCounter: React.FC = () => {
       <div className="grid lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3">
           <div className="space-y-6">
-            <NeuroCard className="p-6 space-y-4">
+            <Card className="p-6 space-y-4">
               <h3 className="text-lg font-semibold">Upload File or Paste Code</h3>
               <div className="flex items-center space-x-4">
                 <input
@@ -87,11 +88,11 @@ const TokenCounter: React.FC = () => {
                   </span>
                 )}
                 <div className="flex-1"></div>
-                <NeuroButton onClick={clearCode} variant="secondary" size="sm">
+                <Button onClick={clearCode} variant="secondary" size="sm">
                   Clear
-                </NeuroButton>
+                </Button>
               </div>
-            </NeuroCard>
+            </Card>
 
             <CodeEditor
               value={code}
@@ -103,7 +104,7 @@ const TokenCounter: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          <NeuroCard className="p-6 space-y-4">
+          <Card className="p-6 space-y-4">
             <h3 className="text-lg font-semibold">Token Analysis</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -122,9 +123,9 @@ const TokenCounter: React.FC = () => {
                 </span>
               </div>
             </div>
-          </NeuroCard>
+          </Card>
 
-          <NeuroCard className="p-6 space-y-4">
+          <Card className="p-6 space-y-4">
             <h3 className="text-lg font-semibold">Category Fit</h3>
             <div className="space-y-3">
               {categories.map((category) => {
@@ -148,17 +149,17 @@ const TokenCounter: React.FC = () => {
                         {category.limit ? `≤ ${category.limit} tokens` : 'Unlimited'}
                       </div>
                     </div>
-                    <div className="text-xl">
-                      {isCurrent ? '🎯' : fits ? '✅' : '❌'}
+                    <div>
+                      {isCurrent ? <Target className="w-5 h-5" /> : fits ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                     </div>
                   </div>
                 );
               })}
             </div>
-          </NeuroCard>
+          </Card>
 
           {totalTokens > 0 && (
-            <NeuroCard className="p-6 space-y-4">
+            <Card className="p-6 space-y-4">
               <h3 className="text-lg font-semibold">Quick Stats</h3>
               <div className="space-y-2 text-sm">
                 <div>Lines of code: {code.split('\n').length}</div>
@@ -167,7 +168,7 @@ const TokenCounter: React.FC = () => {
                   {currentCategory.name}
                 </span></div>
               </div>
-            </NeuroCard>
+            </Card>
           )}
         </div>
       </div>

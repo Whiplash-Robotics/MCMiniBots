@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { redirect, useNavigate } from "react-router";
-import NeuroCard from "../components/NeuroCard";
-import NeuroButton from "../components/NeuroButton";
+import { useNavigate } from "react-router";
+import Card from "../components/Card";
+import Button from "../components/Button";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 // Client-only Chart wrapper component
@@ -75,36 +75,8 @@ interface Analytics {
   editHeatmap: Array<[number, number, number]>; // [day_of_week, week_num, count]
 }
 
-// Loader function for route protection (recommended approach in v7)
-export async function adminLoader({ request }: { request: Request }) {
-  // Skip authentication check during SSR - let client handle it completely
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const token = getToken();
-  if (!token) {
-    throw redirect("/login");
-  }
-
-  // Verify admin status with your API
-  try {
-    const response = await fetch("/api/auth/verify", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!response.ok) {
-      throw redirect("/");
-    }
-    const data = await response.json();
-    if (!data.user?.isAdmin) {
-      throw redirect("/");
-    }
-  } catch (error) {
-    throw redirect("/");
-  }
-
-  return null;
-}
+// Note: Loaders run on server-side where localStorage is not available
+// Authentication is handled client-side in the component
 
 const Admin: React.FC = () => {
   const { user } = useAuth();
@@ -427,7 +399,7 @@ const Admin: React.FC = () => {
         </p>
       </div>
 
-      <NeuroCard className="p-6">
+      <Card className="p-6">
         <div className="flex flex-wrap gap-2 mb-6">
           {tabs.map((tab) => (
             <button
@@ -453,48 +425,48 @@ const Admin: React.FC = () => {
               <>
                 {selectedSubmissions.size > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <NeuroButton
+                    <Button
                       onClick={() => bulkUpdateSubmissions("approve")}
                       variant="secondary"
                       size="sm"
                     >
                       Approve Selected ({selectedSubmissions.size})
-                    </NeuroButton>
-                    <NeuroButton
+                    </Button>
+                    <Button
                       onClick={() => setBulkRejectionData({ reason: "" })}
                       variant="secondary"
                       size="sm"
                       className="text-orange-500"
                     >
                       Reject Selected ({selectedSubmissions.size})
-                    </NeuroButton>
-                    <NeuroButton
+                    </Button>
+                    <Button
                       onClick={() => bulkUpdateSubmissions("delete")}
                       variant="secondary"
                       size="sm"
                       className="text-red-500"
                     >
                       Delete Selected ({selectedSubmissions.size})
-                    </NeuroButton>
-                    <NeuroButton
+                    </Button>
+                    <Button
                       onClick={clearSubmissionSelection}
                       variant="secondary"
                       size="sm"
                     >
                       Clear Selection
-                    </NeuroButton>
+                    </Button>
                   </div>
                 )}
 
                 {pendingSubmissions.length > 0 && (
                   <div className="flex gap-2 mb-4">
-                    <NeuroButton
+                    <Button
                       onClick={() => selectAllSubmissions(pendingSubmissions)}
                       variant="secondary"
                       size="sm"
                     >
                       Select All
-                    </NeuroButton>
+                    </Button>
                   </div>
                 )}
 
@@ -507,7 +479,7 @@ const Admin: React.FC = () => {
                     </p>
                   ) : (
                     pendingSubmissions.map((submission) => (
-                      <NeuroCard
+                      <Card
                         key={submission.id}
                         className={`p-4 hover:shadow-neuro-light-inset cursor-pointer ${
                           selectedSubmissions.has(submission.id)
@@ -558,7 +530,7 @@ const Admin: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </NeuroCard>
+                      </Card>
                     ))
                   )}
                 </div>
@@ -576,7 +548,7 @@ const Admin: React.FC = () => {
                   </p>
                 ) : (
                   submissions.map((submission) => (
-                    <NeuroCard
+                    <Card
                       key={submission.id}
                       className="p-4 hover:shadow-neuro-light-inset cursor-pointer"
                       onClick={() => viewCode(submission)}
@@ -620,7 +592,7 @@ const Admin: React.FC = () => {
                             {submission.rejectionReason}
                           </div>
                         )}
-                    </NeuroCard>
+                    </Card>
                   ))
                 )}
               </div>
@@ -652,7 +624,7 @@ const Admin: React.FC = () => {
                     </p>
                   ) : (
                     users.map((user) => (
-                      <NeuroCard
+                      <Card
                         key={user.id}
                         className="p-4 hover:shadow-neuro-light-inset cursor-pointer"
                         onClick={() => setSelectedUser(user)}
@@ -682,7 +654,7 @@ const Admin: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                      </NeuroCard>
+                      </Card>
                     ))
                   )}
                 </div>
@@ -694,38 +666,38 @@ const Admin: React.FC = () => {
               <div className="space-y-6">
                 {/* Key Metrics Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <NeuroCard className="p-6 text-center">
+                  <Card className="p-6 text-center">
                     <div className="text-3xl font-bold text-gold-500">
                       {analytics.totalSubmissions}
                     </div>
                     <div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                       Total Submissions
                     </div>
-                  </NeuroCard>
+                  </Card>
 
-                  <NeuroCard className="p-6 text-center">
+                  <Card className="p-6 text-center">
                     <div className="text-3xl font-bold text-gold-500">
                       {analytics.totalUsers}
                     </div>
                     <div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                       Registered Users
                     </div>
-                  </NeuroCard>
+                  </Card>
 
-                  <NeuroCard className="p-6 text-center">
+                  <Card className="p-6 text-center">
                     <div className="text-3xl font-bold text-gold-500">
                       {analytics.recentActivity}
                     </div>
                     <div className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
                       Recent Activity (7d)
                     </div>
-                  </NeuroCard>
+                  </Card>
                 </div>
 
                 {/* Charts Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* 1. Weight Categories Pie Chart */}
-                  <NeuroCard className="p-6">
+                  <Card className="p-6">
                     <h3 className="font-semibold mb-6 text-lg">Weight Categories Distribution</h3>
                     <ClientOnlyChart
                       options={{
@@ -762,10 +734,10 @@ const Admin: React.FC = () => {
                       type="pie"
                       height={350}
                     />
-                  </NeuroCard>
+                  </Card>
 
                   {/* 2. Submissions Timeline */}
-                  <NeuroCard className="p-6">
+                  <Card className="p-6">
                     <h3 className="font-semibold mb-6 text-lg">Active Submissions Over Time</h3>
                     <ClientOnlyChart
                       options={{
@@ -803,12 +775,12 @@ const Admin: React.FC = () => {
                       type="line"
                       height={350}
                     />
-                  </NeuroCard>
+                  </Card>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* 3. Leaderboard Competitiveness */}
-                  <NeuroCard className="p-6">
+                  <Card className="p-6">
                     <h3 className="font-semibold mb-6 text-lg">Top 10% Position Changes</h3>
                     <ClientOnlyChart
                       options={{
@@ -861,10 +833,10 @@ const Admin: React.FC = () => {
                       type="area"
                       height={350}
                     />
-                  </NeuroCard>
+                  </Card>
 
                   {/* 4. Bot Edits Heatmap */}
-                  <NeuroCard className="p-6">
+                  <Card className="p-6">
                     <h3 className="font-semibold mb-6 text-lg">Bot Edits Activity (90 days)</h3>
                     <ClientOnlyChart
                       options={{
@@ -912,7 +884,7 @@ const Admin: React.FC = () => {
                       type="heatmap"
                       height={350}
                     />
-                  </NeuroCard>
+                  </Card>
                 </div>
               </div>
             )}
@@ -922,18 +894,18 @@ const Admin: React.FC = () => {
           <div className="space-y-4">
             {/* Code Preview - Always show if available */}
             {codeView && (
-              <NeuroCard className="p-4">
+              <Card className="p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold text-lg">Code Review</h3>
                   <div className="flex gap-2">
-                    <NeuroButton
+                    <Button
                       onClick={copyCodeToClipboard}
                       variant="secondary"
                       size="sm"
                     >
                       📋 Copy
-                    </NeuroButton>
-                    <NeuroButton
+                    </Button>
+                    <Button
                       onClick={() => {
                         setSelectedSubmission(null);
                         setCodeView("");
@@ -942,7 +914,7 @@ const Admin: React.FC = () => {
                       size="sm"
                     >
                       ✕ Close
-                    </NeuroButton>
+                    </Button>
                   </div>
                 </div>
                 <div
@@ -952,12 +924,12 @@ const Admin: React.FC = () => {
                 >
                   <pre>{codeView}</pre>
                 </div>
-              </NeuroCard>
+              </Card>
             )}
 
             {/* Submission Details - Only show if submission is selected and pending */}
             {selectedSubmission && (
-              <NeuroCard className="p-4">
+              <Card className="p-4">
                 <h3 className="font-semibold mb-4 text-lg">Submission Actions</h3>
                 <div className="space-y-3 text-sm mb-6">
                   <div className="grid grid-cols-2 gap-4">
@@ -990,7 +962,7 @@ const Admin: React.FC = () => {
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
-                    <NeuroButton
+                    <Button
                       onClick={() =>
                         updateSubmissionStatus(
                           selectedSubmission.id,
@@ -1002,8 +974,8 @@ const Admin: React.FC = () => {
                       className="text-green-600 hover:text-green-700"
                     >
                       ✓ Approve
-                    </NeuroButton>
-                    <NeuroButton
+                    </Button>
+                    <Button
                       onClick={() =>
                         setRejectionData({
                           submissionId: selectedSubmission.id,
@@ -1015,13 +987,13 @@ const Admin: React.FC = () => {
                       className="text-orange-500 hover:text-orange-600"
                     >
                       ⚠ Reject
-                    </NeuroButton>
+                    </Button>
                   </div>
                   
                   {/* Additional Actions */}
                   <div className="grid grid-cols-2 gap-2">
                     {selectedSubmission.status !== "pending" && (
-                      <NeuroButton
+                      <Button
                         onClick={() =>
                           updateSubmissionStatus(
                             selectedSubmission.id,
@@ -1033,24 +1005,24 @@ const Admin: React.FC = () => {
                         className="text-yellow-600 hover:text-yellow-700"
                       >
                         ↺ Move to Pending
-                      </NeuroButton>
+                      </Button>
                     )}
-                    <NeuroButton
+                    <Button
                       onClick={() => deleteSubmission(selectedSubmission.id)}
                       variant="secondary"
                       size="sm"
                       className="text-red-500 hover:text-red-600"
                     >
                       🗑 Delete
-                    </NeuroButton>
+                    </Button>
                   </div>
                 </div>
-              </NeuroCard>
+              </Card>
             )}
 
             {/* User Details - Only show when user tab is active */}
             {selectedUser && activeTab === "users" && (
-              <NeuroCard className="p-4">
+              <Card className="p-4">
                 <h3 className="font-semibold mb-4 text-lg">User Management</h3>
                 <div className="space-y-3 text-sm mb-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -1072,7 +1044,7 @@ const Admin: React.FC = () => {
                   </div>
                 </div>
 
-                <NeuroButton
+                <Button
                   onClick={() =>
                     setResetPasswordData({
                       userId: selectedUser.id,
@@ -1084,13 +1056,13 @@ const Admin: React.FC = () => {
                   className="w-full"
                 >
                   🔑 Reset Password
-                </NeuroButton>
-              </NeuroCard>
+                </Button>
+              </Card>
             )}
 
             {/* Empty State */}
             {!codeView && !selectedSubmission && !selectedUser && (
-              <NeuroCard className="p-8 text-center">
+              <Card className="p-8 text-center">
                 <div className={`text-6xl mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
                   👁️
                 </div>
@@ -1098,7 +1070,7 @@ const Admin: React.FC = () => {
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Select a submission from the left to view and review the code here.
                 </p>
-              </NeuroCard>
+              </Card>
             )}
           </div>
         </div>
@@ -1106,7 +1078,7 @@ const Admin: React.FC = () => {
         {/* Dialogs */}
         {rejectionData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <NeuroCard className="p-6 m-4 w-full max-w-md">
+            <Card className="p-6 m-4 w-full max-w-md">
               <h3 className="font-semibold mb-4">Reject Submission</h3>
               <div className="space-y-4">
                 <textarea
@@ -1126,7 +1098,7 @@ const Admin: React.FC = () => {
                   rows={4}
                 />
                 <div className="flex gap-2">
-                  <NeuroButton
+                  <Button
                     onClick={() =>
                       updateSubmissionStatus(
                         rejectionData.submissionId,
@@ -1139,24 +1111,24 @@ const Admin: React.FC = () => {
                     className="flex-1 text-red-500"
                   >
                     Reject
-                  </NeuroButton>
-                  <NeuroButton
+                  </Button>
+                  <Button
                     onClick={() => setRejectionData(null)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
                   >
                     Cancel
-                  </NeuroButton>
+                  </Button>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         )}
 
         {bulkRejectionData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <NeuroCard className="p-6 m-4 w-full max-w-md">
+            <Card className="p-6 m-4 w-full max-w-md">
               <h3 className="font-semibold mb-4">Bulk Reject Submissions</h3>
               <div className="space-y-4">
                 <textarea
@@ -1176,7 +1148,7 @@ const Admin: React.FC = () => {
                   rows={4}
                 />
                 <div className="flex gap-2">
-                  <NeuroButton
+                  <Button
                     onClick={() =>
                       bulkUpdateSubmissions("reject", bulkRejectionData.reason)
                     }
@@ -1185,24 +1157,24 @@ const Admin: React.FC = () => {
                     className="flex-1 text-red-500"
                   >
                     Reject ({selectedSubmissions.size})
-                  </NeuroButton>
-                  <NeuroButton
+                  </Button>
+                  <Button
                     onClick={() => setBulkRejectionData(null)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
                   >
                     Cancel
-                  </NeuroButton>
+                  </Button>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         )}
 
         {resetPasswordData && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <NeuroCard className="p-6 m-4 w-full max-w-md">
+            <Card className="p-6 m-4 w-full max-w-md">
               <h3 className="font-semibold mb-4">Reset Password</h3>
               <div className="space-y-4">
                 <input
@@ -1222,7 +1194,7 @@ const Admin: React.FC = () => {
                   }`}
                 />
                 <div className="flex gap-2">
-                  <NeuroButton
+                  <Button
                     onClick={() =>
                       resetUserPassword(
                         resetPasswordData.userId,
@@ -1235,21 +1207,21 @@ const Admin: React.FC = () => {
                     disabled={resetPasswordData.newPassword.length < 6}
                   >
                     Reset Password
-                  </NeuroButton>
-                  <NeuroButton
+                  </Button>
+                  <Button
                     onClick={() => setResetPasswordData(null)}
                     variant="secondary"
                     size="sm"
                     className="flex-1"
                   >
                     Cancel
-                  </NeuroButton>
+                  </Button>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         )}
-      </NeuroCard>
+      </Card>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import CodeEditor from '../components/CodeEditor';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -140,7 +140,7 @@ const Submit: React.FC = () => {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <NeuroCard className="p-6 space-y-4">
+          <Card className="p-6 space-y-4">
             <h3 className="text-lg font-semibold">Category Selection</h3>
             <div className="grid grid-cols-2 gap-4">
               {categories.map((category) => (
@@ -160,9 +160,9 @@ const Submit: React.FC = () => {
                 </button>
               ))}
             </div>
-          </NeuroCard>
+          </Card>
 
-          <NeuroCard className="p-6 space-y-4">
+          <Card className="p-6 space-y-4">
             <div className="flex items-center space-x-4">
               <input
                 type="text"
@@ -188,7 +188,7 @@ const Submit: React.FC = () => {
                 </span>
               </div>
             )}
-          </NeuroCard>
+          </Card>
 
           <CodeEditor
             value={code}
@@ -198,14 +198,14 @@ const Submit: React.FC = () => {
           />
 
           {message && (
-            <NeuroCard className={`p-4 ${
+            <Card className={`p-4 ${
               message.type === 'success' ? 'text-green-500' : 'text-red-500'
             }`}>
               {message.text}
-            </NeuroCard>
+            </Card>
           )}
 
-          <NeuroButton
+          <Button
             onClick={handleSubmit}
             variant="gold"
             size="lg"
@@ -213,11 +213,11 @@ const Submit: React.FC = () => {
             className="w-full"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Bot'}
-          </NeuroButton>
+          </Button>
         </div>
 
         <div className="space-y-6">
-          <NeuroCard className="p-6">
+          <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Your Submissions</h3>
             {submissions.length === 0 ? (
               <p className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -240,7 +240,7 @@ const Submit: React.FC = () => {
                 ))}
               </div>
             )}
-          </NeuroCard>
+          </Card>
         </div>
       </div>
     </div>

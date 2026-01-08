@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" style="background-color: #f5f5f7; color: #111827;">
+<head>
+  <meta charset="UTF-8">
+  <title>Theme Test</title>
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('theme');
+        const isDark = theme ? JSON.parse(theme) : false;
+        const root = document.documentElement;
+
+        if (isDark) {
+          root.classList.add('dark');
+          root.style.backgroundColor = '#0a0a0a';
+          root.style.color = '#f3f4f6';
+        } else {
+          root.style.backgroundColor = '#f5f5f7';
+          root.style.color = '#111827';
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    body { margin: 0; padding: 20px; }
+    .card { background: white; padding: 20px; border-radius: 8px; margin: 10px 0; }
+    .dark .card { background: #1a1a1a; }
+  </style>
+</head>
+<body>
+  <h1>Theme Test</h1>
+  <p>The background should be set immediately without flash.</p>
+  <div class="card">This is a card</div>
+  <button onclick="toggleTheme()">Toggle Theme</button>
+  <script>
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const root = document.documentElement;
+      localStorage.setItem('theme', JSON.stringify(!isDark));
+      
+      if (isDark) {
+        root.classList.remove('dark');
+        root.style.backgroundColor = '#f5f5f7';
+        root.style.color = '#111827';
+      } else {
+        root.classList.add('dark');
+        root.style.backgroundColor = '#0a0a0a';
+        root.style.color = '#f3f4f6';
+      }
+    }
+  </script>
+</body>
+</html>

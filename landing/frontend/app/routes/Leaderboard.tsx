@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
-import NeuroCard from '../components/NeuroCard';
+import Card from '../components/Card';
 import { useTheme } from '../context/ThemeContext';
+import { Feather, Scale, Dumbbell, Rocket } from 'lucide-react';
 
 interface BotEntry {
   username: string;
@@ -21,18 +22,31 @@ interface LeaderboardData {
 
 const Leaderboard: React.FC = () => {
   const { isDark } = useTheme();
-  const [data, setData] = useState<LeaderboardData>({
-    leaderboards: {},
-    hallOfFame: {}
+
+  // Initialize from cache to prevent layout shift
+  const [data, setData] = useState<LeaderboardData>(() => {
+    if (typeof window === 'undefined') return { leaderboards: {}, hallOfFame: {} };
+    const cached = sessionStorage.getItem('leaderboardData');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
+    return { leaderboards: {}, hallOfFame: {} };
   });
+
   const [activeCategory, setActiveCategory] = useState<string>('lightweight');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    // Only show loading if we don't have cached data
+    if (typeof window === 'undefined') return true;
+    return !sessionStorage.getItem('leaderboardData');
+  });
 
   const categories = [
-    { id: 'lightweight', name: 'Lightweight', icon: '🪶', limit: 512 },
-    { id: 'middleweight', name: 'Middleweight', icon: '⚖️', limit: 1024 },
-    { id: 'heavyweight', name: 'Heavyweight', icon: '💪', limit: 2048 },
-    { id: 'superheavy', name: 'Superheavy', icon: '🚀', limit: null }
+    { id: 'lightweight', name: 'Lightweight', icon: Feather, limit: 512 },
+    { id: 'middleweight', name: 'Middleweight', icon: Scale, limit: 1024 },
+    { id: 'heavyweight', name: 'Heavyweight', icon: Dumbbell, limit: 2048 },
+    { id: 'superheavy', name: 'Superheavy', icon: Rocket, limit: null }
   ];
 
   useEffect(() => {
@@ -45,6 +59,7 @@ const Leaderboard: React.FC = () => {
       const result = await response.json();
       if (result.success) {
         setData(result);
+        sessionStorage.setItem('leaderboardData', JSON.stringify(result));
       }
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error);
@@ -85,12 +100,13 @@ const Leaderboard: React.FC = () => {
         </div>
 
         {/* Category Tabs */}
-        <NeuroCard className="p-6">
+        <Card className="p-6">
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => {
               const count = data.leaderboards[category.id]?.length || 0;
               const isActive = activeCategory === category.id;
-              
+              const Icon = category.icon;
+
               return (
                 <button
                   key={category.id}
@@ -105,7 +121,7 @@ const Leaderboard: React.FC = () => {
                         : 'bg-neuro-light shadow-neuro-light hover:shadow-neuro-light-inset text-gray-700'
                   }`}
                 >
-                  <span className="text-2xl">{category.icon}</span>
+                  <Icon className="w-5 h-5" />
                   <div className="text-left">
                     <div className="font-semibold">{category.name}</div>
                     <div className="text-xs opacity-75">
@@ -116,13 +132,13 @@ const Leaderboard: React.FC = () => {
               );
             })}
           </div>
-        </NeuroCard>
+        </Card>
 
         {/* Active Leaderboard */}
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Main Leaderboard */}
           <div className="lg:col-span-3">
-            <NeuroCard className="p-6">
+            <Card className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gold-500">
                   {categories.find(c => c.id === activeCategory)?.name} Leaderboard
@@ -212,12 +228,12 @@ const Leaderboard: React.FC = () => {
                   })}
                 </div>
               )}
-            </NeuroCard>
+            </Card>
           </div>
 
           {/* Sidebar Stats */}
           <div className="space-y-6">
-            <NeuroCard className="p-6">
+            <Card className="p-6">
               <h3 className="text-lg font-bold text-gold-500 mb-4">Category Stats</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
@@ -242,9 +258,9 @@ const Leaderboard: React.FC = () => {
                   </span>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
 
-            <NeuroCard className="p-6">
+            <Card className="p-6">
               <h3 className="text-lg font-bold text-gold-500 mb-4">ELO Guide</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center space-x-2">
@@ -268,7 +284,7 @@ const Leaderboard: React.FC = () => {
                   <span>&lt;900 Beginner</span>
                 </div>
               </div>
-            </NeuroCard>
+            </Card>
           </div>
         </div>
       </div>

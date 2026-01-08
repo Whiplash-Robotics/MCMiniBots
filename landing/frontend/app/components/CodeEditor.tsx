@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import NeuroCard from './NeuroCard';
+import Card from './Card';
 
 // Dynamic import for Monaco Editor to avoid SSR issues
 const Editor = React.lazy(() => import('@monaco-editor/react'));
@@ -67,7 +67,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Code Editor</h3>
-        <NeuroCard className="px-4 py-2">
+        <Card className="px-4 py-2">
           <div className="flex items-center space-x-4 text-sm">
             <span>Code: <strong>{tokens.code}</strong></span>
             <span>String: <strong>{tokens.string}</strong></span>
@@ -79,10 +79,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             </span>
             {isAnalyzing && <span className="text-blue-500">Analyzing...</span>}
           </div>
-        </NeuroCard>
+        </Card>
       </div>
 
-      <NeuroCard className="overflow-hidden">
+      <Card className="overflow-hidden">
         <React.Suspense 
           fallback={
             <div 
@@ -113,7 +113,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             }}
           />
         </React.Suspense>
-      </NeuroCard>
+      </Card>
     </div>
   );
 };

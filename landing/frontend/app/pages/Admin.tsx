@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { redirect } from 'react-router';
-import NeuroCard from '../components/NeuroCard';
-import NeuroButton from '../components/NeuroButton';
+import Card from '../components/Card';
+import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -182,7 +182,7 @@ const Admin: React.FC = () => {
     </p>
     </div>
 
-    <NeuroCard className="p-6">
+    <Card className="p-6">
     <div className="flex space-x-4 mb-6">
     {tabs.map((tab) => (
       <button
@@ -208,7 +208,7 @@ const Admin: React.FC = () => {
         </p>
       ) : (
         submissions.map((submission) => (
-          <NeuroCard
+          <Card
           key={submission.id}
           className="p-4 hover:shadow-neuro-light-inset cursor-pointer"
           onClick={() => viewCode(submission)}
@@ -230,14 +230,14 @@ const Admin: React.FC = () => {
           <span>{submission.totalTokens} tokens</span>
           <span>{new Date(submission.createdAt).toLocaleDateString()}</span>
           </div>
-          </NeuroCard>
+          </Card>
         ))
       )}
       </div>
 
       <div className="space-y-4">
       {selectedSubmission && (
-        <NeuroCard className="p-4">
+        <Card className="p-4">
         <h3 className="font-semibold mb-4">Submission Details</h3>
         <div className="space-y-2 text-sm mb-4">
         <div><strong>File:</strong> {selectedSubmission.filename}</div>
@@ -251,44 +251,44 @@ const Admin: React.FC = () => {
 
         <div className="space-y-2">
         <div className="flex space-x-2">
-        <NeuroButton
+        <Button
         onClick={() => updateSubmissionStatus(selectedSubmission.id, 'approved')}
         variant="secondary"
         size="sm"
         className="flex-1"
         >
         Approve
-        </NeuroButton>
-        <NeuroButton
+        </Button>
+        <Button
         onClick={() => updateSubmissionStatus(selectedSubmission.id, 'rejected')}
         variant="secondary"
         size="sm"
         className="flex-1"
         >
         Reject
-        </NeuroButton>
+        </Button>
         </div>
-        <NeuroButton
+        <Button
         onClick={() => deleteSubmission(selectedSubmission.id)}
         variant="secondary"
         size="sm"
         className="w-full text-red-500"
         >
         Delete
-        </NeuroButton>
+        </Button>
         </div>
-        </NeuroCard>
+        </Card>
       )}
 
       {codeView && (
-        <NeuroCard className="p-4">
+        <Card className="p-4">
         <h3 className="font-semibold mb-4">Code Preview</h3>
         <div className={`p-4 rounded-lg font-mono text-sm max-h-96 overflow-auto ${
           isDark ? 'bg-gray-800' : 'bg-gray-100'
         }`}>
         <pre>{codeView}</pre>
         </div>
-        </NeuroCard>
+        </Card>
       )}
       </div>
       </div>
@@ -296,28 +296,28 @@ const Admin: React.FC = () => {
 
     {activeTab === 'analytics' && analytics && (
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <NeuroCard className="p-6 text-center">
+      <Card className="p-6 text-center">
       <div className="text-3xl font-bold text-gold-500">{analytics.totalSubmissions}</div>
       <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
       Total Submissions
       </div>
-      </NeuroCard>
+      </Card>
 
-      <NeuroCard className="p-6 text-center">
+      <Card className="p-6 text-center">
       <div className="text-3xl font-bold text-gold-500">{analytics.totalUsers}</div>
       <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
       Registered Users
       </div>
-      </NeuroCard>
+      </Card>
 
-      <NeuroCard className="p-6 text-center">
+      <Card className="p-6 text-center">
       <div className="text-3xl font-bold text-gold-500">{analytics.recentActivity}</div>
       <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
       Recent Activity (7d)
       </div>
-      </NeuroCard>
+      </Card>
 
-      <NeuroCard className="p-6">
+      <Card className="p-6">
       <h3 className="font-semibold mb-4">By Category</h3>
       <div className="space-y-2 text-sm">
       {Object.entries(analytics.submissionsByCategory).map(([category, count]) => (
@@ -327,10 +327,10 @@ const Admin: React.FC = () => {
         </div>
       ))}
       </div>
-      </NeuroCard>
+      </Card>
       </div>
     )}
-    </NeuroCard>
+    </Card>
     </div>
   );
 };

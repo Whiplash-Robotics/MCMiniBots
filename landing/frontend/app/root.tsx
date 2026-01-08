@@ -25,14 +25,40 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+// Inline script to prevent theme flash - runs before React hydrates
+const ThemeScript = () => {
+  const themeScript = `
+    (function() {
+      try {
+        const theme = localStorage.getItem('theme');
+        const isDark = theme ? JSON.parse(theme) : false;
+        const root = document.documentElement;
+
+        if (isDark) {
+          root.classList.add('dark');
+          // Apply background color immediately via inline style (before CSS loads)
+          root.style.backgroundColor = '#0a0a0a';
+          root.style.color = '#f3f4f6';
+        } else {
+          // Light mode
+          root.style.backgroundColor = '#f5f5f7';
+          root.style.color = '#111827';
+        }
+      } catch (e) {}
+    })();
+  `;
+  return <script dangerouslySetInnerHTML={{ __html: themeScript }} />;
+};
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" style={{ backgroundColor: '#f5f5f7', color: '#111827' }}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <ThemeScript />
       </head>
       <body>
         <ThemeProvider>
@@ -40,7 +66,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {children}
             <ScrollRestoration />
             <Scripts />
-            </AuthProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
