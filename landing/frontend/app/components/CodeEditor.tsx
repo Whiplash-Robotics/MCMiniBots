@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import Card from './Card';
 
 // Dynamic import for Monaco Editor to avoid SSR issues
 const Editor = React.lazy(() => import('@monaco-editor/react'));
@@ -61,59 +60,40 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     onChange(code);
   };
 
-  const totalTokens = tokens.code + tokens.string;
-
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Code Editor</h3>
-        <Card className="px-4 py-2">
-          <div className="flex items-center space-x-4 text-sm">
-            <span>Code: <strong>{tokens.code}</strong></span>
-            <span>String: <strong>{tokens.string}</strong></span>
-            <span className={`font-bold ${
-              totalTokens > 2048 ? 'text-red-500' : 
-              totalTokens > 1024 ? 'text-yellow-500' : 'text-green-500'
-            }`}>
-              Total: {totalTokens}
-            </span>
-            {isAnalyzing && <span className="text-blue-500">Analyzing...</span>}
+    <div className={`h-full rounded-xl overflow-hidden border ${
+      isDark ? 'border-border-dark' : 'border-border-light'
+    }`}>
+      <React.Suspense
+        fallback={
+          <div
+            style={{ height }}
+            className={`flex items-center justify-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
+          >
+            Loading editor...
           </div>
-        </Card>
-      </div>
-
-      <Card className="overflow-hidden">
-        <React.Suspense 
-          fallback={
-            <div 
-              style={{ height }}
-              className="flex items-center justify-center text-gray-500"
-            >
-              Loading editor...
-            </div>
-          }
-        >
-          <Editor
-            height={height}
-            defaultLanguage="javascript"
-            theme={isDark ? 'vs-dark' : 'light'}
-            value={value}
-            onChange={handleChange}
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              lineNumbers: 'on',
-              roundedSelection: false,
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              tabSize: 2,
-              insertSpaces: true,
-              wordWrap: 'on',
-              padding: { top: 16, bottom: 16 },
-            }}
-          />
-        </React.Suspense>
-      </Card>
+        }
+      >
+        <Editor
+          height={height}
+          defaultLanguage="javascript"
+          theme={isDark ? 'vs-dark' : 'light'}
+          value={value}
+          onChange={handleChange}
+          options={{
+            minimap: { enabled: false },
+            fontSize: 14,
+            lineNumbers: 'on',
+            roundedSelection: false,
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            tabSize: 2,
+            insertSpaces: true,
+            wordWrap: 'on',
+            padding: { top: 16, bottom: 16 },
+          }}
+        />
+      </React.Suspense>
     </div>
   );
 };

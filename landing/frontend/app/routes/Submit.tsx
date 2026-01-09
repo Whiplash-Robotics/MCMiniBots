@@ -130,13 +130,27 @@ const Submit: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message });
+        // Build success message with optional warning
+        let messageText = data.message;
+        if (data.warning) {
+          messageText += ` Note: ${data.warning}`;
+        }
+        if (data.serverTokenCount) {
+          messageText += ` (Server verified: ${data.serverTokenCount.total} tokens)`;
+        }
+
+        setMessage({ type: 'success', text: messageText });
         setCode('');
         setTokens({ code: 0, string: 0 });
         setIsEditing(null);
         fetchUserSubmissions();
       } else {
-        setMessage({ type: 'error', text: data.message || 'Failed to submit' });
+        // Show error with optional warning
+        let errorText = data.message || 'Failed to submit';
+        if (data.warning) {
+          errorText += ` ${data.warning}`;
+        }
+        setMessage({ type: 'error', text: errorText });
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Network error occurred' });

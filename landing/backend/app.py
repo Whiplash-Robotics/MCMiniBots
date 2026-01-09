@@ -149,16 +149,22 @@ def verify_token():
 
 @app.route('/api/analyze-tokens', methods=['POST'])
 def analyze_tokens():
+    """
+    Token counter endpoint for the Token Counter page.
+    Allows //@token-ignore decorators.
+    """
     data = request.get_json()
     code = data.get('code', '')
-    
+
     try:
-        code_tokens, string_tokens = count_tokens_from_code(code)
+        # Allow ignore decorators for the token counter page
+        result = count_tokens_from_code(code, allow_ignore=True)
         return jsonify({
             'success': True,
-            'codeTokens': code_tokens,
-            'stringTokens': string_tokens,
-            'totalTokens': code_tokens + string_tokens
+            'codeTokens': result['code_tokens'],
+            'stringTokens': result['string_tokens'],
+            'totalTokens': result['total_tokens'],
+            'warning': result['warning']
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -166,15 +172,32 @@ def analyze_tokens():
 @app.route('/api/submissions', methods=['POST'])
 @jwt_required()
 def submit_code():
+    """
+    Submission endpoint for bot submissions.
+    DOES NOT allow //@token-ignore decorators.
+    Token count is verified server-side.
+    """
     current_user_id = get_jwt_identity()
     data = request.get_json()
-    
+
     category = data.get('category')
     filename = data.get('filename')
     code = data.get('code')
-    code_tokens = data.get('codeTokens', 0)
-    string_tokens = data.get('stringTokens', 0)
-    
+
+    # RE-COUNT TOKENS SERVER-SIDE with allow_ignore=False
+    # Never trust client-provided token counts for submissions
+    try:
+        result = count_tokens_from_code(code, allow_ignore=False)
+        code_tokens = result['code_tokens']
+        string_tokens = result['string_tokens']
+        total_tokens = result['total_tokens']
+        warning = result['warning']
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Failed to count tokens: {str(e)}'
+        }), 400
+
     # Validate category limits
     category_limits = {
         'lightweight': 512,
@@ -182,14 +205,14 @@ def submit_code():
         'heavyweight': 2048,
         'superheavy': None
     }
-    
-    total_tokens = code_tokens + string_tokens
+
     limit = category_limits.get(category)
-    
+
     if limit and total_tokens > limit:
         return jsonify({
             'success': False,
-            'message': f'Code exceeds {limit} token limit for {category}'
+            'message': f'Code exceeds {limit} token limit for {category} (server count: {total_tokens} tokens)',
+            'warning': warning
         }), 400
     
     # Run security scan
@@ -235,8 +258,22 @@ def submit_code():
         db.session.add(submission)
         db.session.commit()
         message = 'Submission created successfully'
-    
-    return jsonify({'success': True, 'message': message})
+
+    response = {
+        'success': True,
+        'message': message,
+        'serverTokenCount': {
+            'code': code_tokens,
+            'string': string_tokens,
+            'total': total_tokens
+        }
+    }
+
+    # Include warning if ignore decorators were detected
+    if warning:
+        response['warning'] = warning
+
+    return jsonify(response)
 
 @app.route('/api/submissions/user', methods=['GET'])
 @jwt_required()
