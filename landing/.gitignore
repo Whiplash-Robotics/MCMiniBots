@@ -9,6 +9,20 @@ node_modules/
 build/
 dist/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# React Router
+.react-router/
+
 # IDE
 .vscode/
 .idea/
@@ -19,3 +33,9 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
